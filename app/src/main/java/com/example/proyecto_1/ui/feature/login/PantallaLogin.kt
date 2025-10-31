@@ -1,31 +1,12 @@
-package com.example.proyecto_1.ui.pantallas
+package com.example.proyecto_1.ui.feature.login
 
-import android.os.Bundle
 import android.util.Patterns
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,10 +15,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.calendary.R
 
 @Composable
-fun AuthScreen() {
-    var isLogin by remember { mutableStateOf(true) }
+fun PantallaAuth(
+    onContinuar: (() -> Unit)? = null  // si lo conectas al NavHost, pásale la navegación aquí
+) {
+    var esLogin by remember { mutableStateOf(true) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -61,21 +45,29 @@ fun AuthScreen() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Dependiendo si es login o registro, se muestra uno u otro
-            if (isLogin) {
-                LoginForm(onToggle = { isLogin = false })
+            if (esLogin) {
+                FormularioLogin(
+                    onToggle = { esLogin = false },
+                    onContinuar = onContinuar
+                )
             } else {
-                RegisterForm(onToggle = { isLogin = true })
+                FormularioRegistro(
+                    onToggle = { esLogin = true },
+                    onContinuar = onContinuar
+                )
             }
         }
     }
 }
 
 @Composable
-fun LoginForm(onToggle: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+fun FormularioLogin(
+    onToggle: () -> Unit,
+    onContinuar: (() -> Unit)? = null
+) {
+    val contexto = androidx.compose.ui.platform.LocalContext.current
+    var correo by remember { mutableStateOf("") }
+    var contra by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -96,8 +88,8 @@ fun LoginForm(onToggle: () -> Unit) {
         )
 
         OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
+            value = correo,
+            onValueChange = { correo = it },
             label = { Text("Correo electrónico") },
             placeholder = { Text("email@domain.com") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -106,29 +98,60 @@ fun LoginForm(onToggle: () -> Unit) {
         )
 
         OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = contra,
+            onValueChange = { contra = it },
             label = { Text("Contraseña") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // OPCIÓN A: entrar sin validar nada
         Button(
             onClick = {
-                if (email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches() && password.isNotEmpty()) {
-                    Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(context, "Datos inválidos", Toast.LENGTH_SHORT).show()
+                onContinuar?.invoke()
+                // Si no pasas navegación, muestra un aviso y continúa
+                if (onContinuar == null) {
+                    Toast.makeText(contexto, "Entrando…", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Black,
+                contentColor = Color.White
+            )
         ) {
             Text("Continuar")
         }
+
+        // --- Guarda este bloque comentado si luego quieres reactivar la validación ---
+        /*
+        Button(
+            onClick = {
+                if (correo.isNotEmpty() &&
+                    Patterns.EMAIL_ADDRESS.matcher(correo).matches() &&
+                    contra.isNotEmpty()
+                ) {
+                    onContinuar?.invoke()
+                    if (onContinuar == null) {
+                        Toast.makeText(contexto, "Inicio de sesión exitoso", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    Toast.makeText(contexto, "Datos inválidos", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Black,
+                contentColor = Color.White
+            )
+        ) { Text("Continuar") }
+        */
+        // ---------------------------------------------------------------------------
 
         TextButton(onClick = onToggle) {
             Text("¿No tienes cuenta? Regístrate aquí")
@@ -137,12 +160,15 @@ fun LoginForm(onToggle: () -> Unit) {
 }
 
 @Composable
-fun RegisterForm(onToggle: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+fun FormularioRegistro(
+    onToggle: () -> Unit,
+    onContinuar: (() -> Unit)? = null
+) {
+    val contexto = androidx.compose.ui.platform.LocalContext.current
+    var nombre by remember { mutableStateOf("") }
+    var correo by remember { mutableStateOf("") }
+    var contra by remember { mutableStateOf("") }
+    var confirmar by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -163,16 +189,16 @@ fun RegisterForm(onToggle: () -> Unit) {
         )
 
         OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
+            value = nombre,
+            onValueChange = { nombre = it },
             label = { Text("Nombre completo") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
         OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
+            value = correo,
+            onValueChange = { correo = it },
             label = { Text("Correo electrónico") },
             placeholder = { Text("email@domain.com") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -181,8 +207,8 @@ fun RegisterForm(onToggle: () -> Unit) {
         )
 
         OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = contra,
+            onValueChange = { contra = it },
             label = { Text("Contraseña") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
@@ -190,31 +216,29 @@ fun RegisterForm(onToggle: () -> Unit) {
         )
 
         OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
+            value = confirmar,
+            onValueChange = { confirmar = it },
             label = { Text("Confirmar contraseña") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // También entra sin validar (modo demo)
         Button(
             onClick = {
-                if (name.isNotEmpty() &&
-                    email.isNotEmpty() &&
-                    Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
-                    password.isNotEmpty() &&
-                    password == confirmPassword
-                ) {
-                    Toast.makeText(context, "¡Registro exitoso! Bienvenido $name", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(context, "Revisa los datos ingresados", Toast.LENGTH_SHORT).show()
+                onContinuar?.invoke()
+                if (onContinuar == null) {
+                    Toast.makeText(contexto, "Entrando…", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Black,
+                contentColor = Color.White
+            )
         ) {
             Text("Registrarse")
         }
