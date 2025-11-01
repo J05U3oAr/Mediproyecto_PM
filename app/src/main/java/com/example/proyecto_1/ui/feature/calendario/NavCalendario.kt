@@ -5,5 +5,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 
 fun NavGraphBuilder.registrarGrafoCalendario(nav: NavController) {
-    composable<Calendario> { PantallaCalendar() }
+    composable<Calendario> {
+        PantallaCalendar(
+            onVolver = { nav.popBackStack() }
+        )
+    }
 }
