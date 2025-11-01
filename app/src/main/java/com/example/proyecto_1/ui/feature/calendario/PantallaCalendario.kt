@@ -20,16 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.proyecto_1.data.AppDataManager
+import com.example.proyecto_1.data.RecordatorioMedico
 import java.util.*
-
-data class MedicalReminder(
-    val id: Int,
-    val title: String,
-    val time: String,
-    val day: Int,
-    val month: Int,
-    val year: Int
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,16 +31,8 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
     var selectedDay by remember { mutableStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
     var showDialog by remember { mutableStateOf(false) }
 
-    // Lista mutable de recordatorios
-    var reminders by remember {
-        mutableStateOf(
-            listOf(
-                MedicalReminder(1, "Medicina 1", "8:00 a.m.", 17, 9, 2025),
-                MedicalReminder(2, "Medicina 2", "10:00 a.m.", 17, 9, 2025),
-                MedicalReminder(3, "Cita 1", "5:00 p.m.", 18, 9, 2025)
-            )
-        )
-    }
+    // Usar los recordatorios del gestor global
+    val recordatorios = AppDataManager.recordatorios
 
     Scaffold(
         topBar = {
@@ -81,9 +66,9 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                // Mostrar los primeros 3 recordatorios o los más recientes
-                val upcomingReminders = reminders.sortedWith(
-                    compareBy({ it.year }, { it.month }, { it.day })
+                // Mostrar los primeros 3 recordatorios más próximos
+                val upcomingReminders = recordatorios.sortedWith(
+                    compareBy({ it.anio }, { it.mes }, { it.dia })
                 ).take(3)
 
                 items(upcomingReminders) { reminder ->
@@ -99,12 +84,12 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    CalendarView(selectedDay, { selectedDay = it }, reminders)
+                    CalendarView(selectedDay, { selectedDay = it }, recordatorios.toList())
                     Spacer(Modifier.height(24.dp))
 
                     // Mostrar recordatorios del día seleccionado
-                    val selectedDayReminders = reminders.filter {
-                        it.day == selectedDay && it.month == 9 && it.year == 2025
+                    val selectedDayReminders = recordatorios.filter {
+                        it.dia == selectedDay && it.mes == 9 && it.anio == 2025
                     }
 
                     if (selectedDayReminders.isNotEmpty()) {
@@ -142,7 +127,7 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
         AgregarRecordatorioDialog(
             onDismiss = { showDialog = false },
             onConfirm = { nuevoRecordatorio ->
-                reminders = reminders + nuevoRecordatorio
+                AppDataManager.agregarRecordatorio(nuevoRecordatorio)
                 showDialog = false
             }
         )
@@ -152,7 +137,7 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
 @Composable
 fun AgregarRecordatorioDialog(
     onDismiss: () -> Unit,
-    onConfirm: (MedicalReminder) -> Unit
+    onConfirm: (RecordatorioMedico) -> Unit
 ) {
     var nombreMedicina by remember { mutableStateOf("") }
     var dia by remember { mutableStateOf("") }
@@ -205,13 +190,13 @@ fun AgregarRecordatorioDialog(
                     if (nombreMedicina.isNotBlank() && dia.isNotBlank() && hora.isNotBlank()) {
                         val diaInt = dia.toIntOrNull() ?: 1
                         val nuevoId = (1..10000).random()
-                        val nuevoRecordatorio = MedicalReminder(
+                        val nuevoRecordatorio = RecordatorioMedico(
                             id = nuevoId,
-                            title = nombreMedicina,
-                            time = hora,
-                            day = diaInt.coerceIn(1, 30),
-                            month = 9,
-                            year = 2025
+                            titulo = nombreMedicina,
+                            hora = hora,
+                            dia = diaInt.coerceIn(1, 30),
+                            mes = 9,
+                            anio = 2025
                         )
                         onConfirm(nuevoRecordatorio)
                     }
@@ -232,7 +217,7 @@ fun AgregarRecordatorioDialog(
 }
 
 @Composable
-fun MedicalReminderCard(reminder: MedicalReminder) {
+fun MedicalReminderCard(reminder: RecordatorioMedico) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -248,13 +233,13 @@ fun MedicalReminderCard(reminder: MedicalReminder) {
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    reminder.title,
+                    reminder.titulo,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black
                 )
                 Text(
-                    "${reminder.time} - ${reminder.day}/${reminder.month}/${reminder.year}",
+                    "${reminder.hora} - ${reminder.dia}/${reminder.mes}/${reminder.anio}",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
@@ -272,7 +257,7 @@ fun MedicalReminderCard(reminder: MedicalReminder) {
 fun CalendarView(
     selectedDay: Int,
     onDaySelected: (Int) -> Unit,
-    reminders: List<MedicalReminder>
+    reminders: List<RecordatorioMedico>
 ) {
     val daysInMonth = 30
     val firstDayOfWeek = 1
@@ -309,7 +294,7 @@ fun CalendarView(
                     if (dayNumber in 1..daysInMonth) {
                         val currentDay = dayNumber
                         val hasReminders = reminders.any {
-                            it.day == currentDay && it.month == 9 && it.year == 2025
+                            it.dia == currentDay && it.mes == 9 && it.anio == 2025
                         }
 
                         Box(

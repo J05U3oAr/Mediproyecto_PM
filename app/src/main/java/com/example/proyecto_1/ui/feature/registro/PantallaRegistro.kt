@@ -1,65 +1,259 @@
 package com.example.proyecto_1.ui.feature.registro
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.proyecto_1.data.AppDataManager
+import com.example.proyecto_1.data.UsuarioRegistro
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaRegistro() {
     val cs = MaterialTheme.colorScheme
+    val context = LocalContext.current
+
+    // Obtener los datos actuales del usuario
+    val usuarioActual = AppDataManager.usuarioRegistro.value
+
+    // Estados locales para los campos
+    var nombre by remember { mutableStateOf(usuarioActual.nombre) }
+    var edad by remember { mutableStateOf(usuarioActual.edad) }
+    var genero by remember { mutableStateOf(usuarioActual.genero) }
+    var tipoSangre by remember { mutableStateOf(usuarioActual.tipoSangre) }
+    var alergias by remember { mutableStateOf(usuarioActual.alergias) }
+    var contactoEmergencia by remember { mutableStateOf(usuarioActual.contactoEmergencia) }
+
+    // Menú desplegable para género
+    var generoExpandido by remember { mutableStateOf(false) }
+    val opcionesGenero = listOf("Masculino", "Femenino", "Otro", "Prefiero no decir")
+
+    // Menú desplegable para tipo de sangre
+    var tipoSangreExpandido by remember { mutableStateOf(false) }
+    val opcionesTipoSangre = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Spacer(Modifier.height(10.dp))
-        Box(
-            modifier = Modifier.fillMaxWidth().height(72.dp)
-                .clip(RoundedCornerShape(16.dp)).background(cs.secondaryContainer),
-            contentAlignment = Alignment.Center
-        ) { Text("Registro", fontSize = 36.sp, fontWeight = FontWeight.Black, color = cs.onSurface) }
 
-        RowLabelSmallField("Nombre")
-        RowLabelSmallField("Edad")
-        RowLabelSmallField("Género")
-        SectionLabel("Tipo de sangre"); DisabledFieldFull()
-        SectionLabel("Alergías"); DisabledFieldFull()
-        SectionLabel("Contacto de emergencia"); DisabledFieldFull()
+        // Título
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(cs.secondaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "Registro Médico",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = cs.onSurface
+            )
+        }
+
+        // Campo Nombre
+        OutlinedTextField(
+            value = nombre,
+            onValueChange = { nombre = it },
+            label = { Text("Nombre completo") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(10.dp)
+        )
+
+        // Fila: Edad y Género
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Campo Edad
+            OutlinedTextField(
+                value = edad,
+                onValueChange = { if (it.length <= 3) edad = it },
+                label = { Text("Edad") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp)
+            )
+
+            // Dropdown Género
+            ExposedDropdownMenuBox(
+                expanded = generoExpandido,
+                onExpandedChange = { generoExpandido = it },
+                modifier = Modifier.weight(1f)
+            ) {
+                OutlinedTextField(
+                    value = genero,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Género") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = generoExpandido) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = generoExpandido,
+                    onDismissRequest = { generoExpandido = false }
+                ) {
+                    opcionesGenero.forEach { opcion ->
+                        DropdownMenuItem(
+                            text = { Text(opcion) },
+                            onClick = {
+                                genero = opcion
+                                generoExpandido = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Tipo de sangre
+        Text(
+            "Tipo de sangre",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 18.sp,
+            color = cs.onSurface
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = tipoSangreExpandido,
+            onExpandedChange = { tipoSangreExpandido = it }
+        ) {
+            OutlinedTextField(
+                value = tipoSangre,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Seleccionar tipo") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoSangreExpandido) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
+            )
+            ExposedDropdownMenu(
+                expanded = tipoSangreExpandido,
+                onDismissRequest = { tipoSangreExpandido = false }
+            ) {
+                opcionesTipoSangre.forEach { opcion ->
+                    DropdownMenuItem(
+                        text = { Text(opcion) },
+                        onClick = {
+                            tipoSangre = opcion
+                            tipoSangreExpandido = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // Alergias
+        Text(
+            "Alergias",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 18.sp,
+            color = cs.onSurface
+        )
+
+        OutlinedTextField(
+            value = alergias,
+            onValueChange = { alergias = it },
+            placeholder = { Text("Ej: Penicilina, polen, mariscos") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 80.dp),
+            shape = RoundedCornerShape(10.dp),
+            maxLines = 3
+        )
+
+        // Contacto de emergencia
+        Text(
+            "Contacto de emergencia",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 18.sp,
+            color = cs.onSurface
+        )
+
+        OutlinedTextField(
+            value = contactoEmergencia,
+            onValueChange = { contactoEmergencia = it },
+            placeholder = { Text("Nombre y teléfono") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(10.dp)
+        )
 
         Spacer(Modifier.weight(1f))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Button(
-                onClick = {}, shape = RoundedCornerShape(40.dp),
-                colors = ButtonDefaults.buttonColors(cs.secondaryContainer, cs.onSecondaryContainer),
-                modifier = Modifier.fillMaxWidth(0.7f).height(64.dp)
-            ) { Text("Guardar", fontSize = 20.sp, textAlign = TextAlign.Center) }
-        }
-    }
-}
 
-@Composable private fun RowLabelSmallField(label: String) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-        DisabledFieldSmall()
+        // Botón Guardar
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Button(
+                onClick = {
+                    // Validar que al menos el nombre esté lleno
+                    if (nombre.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            "Por favor ingresa tu nombre",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        // Guardar los datos
+                        val nuevoUsuario = UsuarioRegistro(
+                            nombre = nombre,
+                            edad = edad,
+                            genero = genero,
+                            tipoSangre = tipoSangre,
+                            alergias = alergias,
+                            contactoEmergencia = contactoEmergencia
+                        )
+                        AppDataManager.actualizarUsuario(nuevoUsuario)
+
+                        Toast.makeText(
+                            context,
+                            "✓ Datos guardados correctamente",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                },
+                shape = RoundedCornerShape(40.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = cs.secondaryContainer,
+                    contentColor = cs.onSecondaryContainer
+                ),
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(64.dp)
+            ) {
+                Text(
+                    "Guardar",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
     }
-}
-@Composable private fun DisabledFieldSmall() {
-    OutlinedTextField(value = "", onValueChange = {}, enabled = false, singleLine = true,
-        shape = RoundedCornerShape(10.dp), modifier = Modifier.width(140.dp).heightIn(min = 44.dp))
-}
-@Composable private fun DisabledFieldFull() {
-    OutlinedTextField(value = "", onValueChange = {}, enabled = false, singleLine = true,
-        shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp))
-}
-@Composable private fun SectionLabel(text: String) {
-    Text(text, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
 }

@@ -20,13 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class Contacto(
-    val id: Int,
-    val nombre: String,
-    val telefono: String,
-    val relacion: String
-)
+import com.example.proyecto_1.data.AppDataManager
+import com.example.proyecto_1.data.ContactoEmergencia
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,18 +29,10 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
     val c = MaterialTheme.colorScheme
     var showAgregarDialog by remember { mutableStateOf(false) }
     var showAlertaDialog by remember { mutableStateOf(false) }
-    var contactoSeleccionado by remember { mutableStateOf<Contacto?>(null) }
+    var contactoSeleccionado by remember { mutableStateOf<ContactoEmergencia?>(null) }
 
-    // Lista mutable de contactos
-    var contactos by remember {
-        mutableStateOf(
-            listOf(
-                Contacto(1, "Dr. García", "5551-2345", "Médico de cabecera"),
-                Contacto(2, "María López", "5551-6789", "Familiar"),
-                Contacto(3, "Pedro Martínez", "5551-9876", "Amigo cercano")
-            )
-        )
-    }
+    // Usar los contactos del gestor global
+    val contactos = AppDataManager.contactos
 
     Scaffold(
         topBar = {
@@ -155,7 +142,7 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(contactos) { contacto ->
+                items(contactos.toList()) { contacto ->
                     ItemContacto(
                         contacto = contacto,
                         onClick = { contactoSeleccionado = contacto }
@@ -170,7 +157,7 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
         AgregarContactoDialog(
             onDismiss = { showAgregarDialog = false },
             onConfirm = { nuevoContacto ->
-                contactos = contactos + nuevoContacto
+                AppDataManager.agregarContacto(nuevoContacto)
                 showAgregarDialog = false
             }
         )
@@ -247,7 +234,7 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
 @Composable
 fun AgregarContactoDialog(
     onDismiss: () -> Unit,
-    onConfirm: (Contacto) -> Unit
+    onConfirm: (ContactoEmergencia) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
@@ -299,7 +286,7 @@ fun AgregarContactoDialog(
                 onClick = {
                     if (nombre.isNotBlank() && telefono.isNotBlank() && relacion.isNotBlank()) {
                         val nuevoId = (1..10000).random()
-                        val nuevoContacto = Contacto(
+                        val nuevoContacto = ContactoEmergencia(
                             id = nuevoId,
                             nombre = nombre,
                             telefono = telefono,
@@ -349,7 +336,7 @@ private fun BotonAccion(
 
 @Composable
 private fun ItemContacto(
-    contacto: Contacto,
+    contacto: ContactoEmergencia,
     onClick: () -> Unit
 ) {
     Card(

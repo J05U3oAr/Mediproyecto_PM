@@ -8,12 +8,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.calendary.R
+import com.example.proyecto_1.data.AppDataManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,6 +21,9 @@ fun PantallaPerfil(
     onCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Obtener los datos del usuario desde el gestor global
+    val usuario = AppDataManager.usuarioRegistro.value
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -48,30 +51,120 @@ fun PantallaPerfil(
                     .clip(CircleShape)
             )
 
+            // Información del usuario
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Nombre:", fontWeight = FontWeight.SemiBold)
-                Text("Invitado", fontSize = 18.sp)
+                // Nombre
+                InfoCard(
+                    titulo = "Nombre",
+                    valor = if (usuario.nombre.isNotBlank()) usuario.nombre else "No especificado"
+                )
 
-                Spacer(Modifier.height(8.dp))
-                Text("Carné:", fontWeight = FontWeight.SemiBold)
-                Text("241424\n241155\n241112 ", fontSize = 18.sp)
+                // Edad
+                if (usuario.edad.isNotBlank()) {
+                    InfoCard(
+                        titulo = "Edad",
+                        valor = "${usuario.edad} años"
+                    )
+                }
+
+                // Género
+                if (usuario.genero.isNotBlank()) {
+                    InfoCard(
+                        titulo = "Género",
+                        valor = usuario.genero
+                    )
+                }
+
+                // Tipo de sangre
+                if (usuario.tipoSangre.isNotBlank()) {
+                    InfoCard(
+                        titulo = "Tipo de sangre",
+                        valor = usuario.tipoSangre
+                    )
+                }
+
+                // Alergias
+                if (usuario.alergias.isNotBlank()) {
+                    InfoCard(
+                        titulo = "Alergias",
+                        valor = usuario.alergias
+                    )
+                }
+
+                // Contacto de emergencia
+                if (usuario.contactoEmergencia.isNotBlank()) {
+                    InfoCard(
+                        titulo = "Contacto de emergencia",
+                        valor = usuario.contactoEmergencia
+                    )
+                }
+
+                // Información del equipo de desarrollo
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text(
+                    "Equipo de desarrollo",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    "Carnés: 241424, 241155, 241112",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.weight(1f))
 
+            // Botón de cerrar sesión
             Button(
-                onClick = onCerrarSesion,
+                onClick = {
+                    // Resetear todos los datos al cerrar sesión
+                    AppDataManager.resetearDatos()
+                    onCerrarSesion()
+                },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Cerrar sesión")
+                Text("Cerrar sesión", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             }
+        }
+    }
+}
+
+@Composable
+private fun InfoCard(titulo: String, valor: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                titulo,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                valor,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
