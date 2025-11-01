@@ -15,8 +15,8 @@ fun NavGraphBuilder.registrarGrafoInicio(nav: NavController) {
             onIrPrimerosAuxilios = { nav.navigate(PrimerosAuxilios) },
             onIrMapa            = { nav.navigate(MapaContactos) },
             onIrLlamadas        = { nav.navigate(Llamadas) },
-            onIrCalendario      = { nav.navigate(Calendario) }, // 👈 AHORA va al Calendario
-            onIrRegistro        = { nav.navigate(Registro) },   // (por si usas otra tarjeta a futuro)
+            onIrCalendario      = { nav.navigate(Calendario) },
+            onIrRegistro        = { nav.navigate(Registro) },
             navController       = nav
         )
     }

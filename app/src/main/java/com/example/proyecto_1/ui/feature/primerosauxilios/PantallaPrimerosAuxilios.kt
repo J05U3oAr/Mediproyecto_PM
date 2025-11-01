@@ -29,7 +29,6 @@ fun PantallaPrimerosAuxilios(
     onAbrirGuia: (String) -> Unit,
     mostrarBarraInferior: Boolean = true
 ) {
-    // Ruta seleccionada para pintar el estado activo de la barra
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedRoute = backStackEntry?.destination?.route
 

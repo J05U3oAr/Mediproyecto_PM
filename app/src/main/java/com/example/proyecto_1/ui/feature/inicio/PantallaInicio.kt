@@ -26,8 +26,8 @@ fun PantallaInicio(
     onIrPrimerosAuxilios: () -> Unit,
     onIrMapa: () -> Unit,
     onIrLlamadas: () -> Unit,
-    onIrCalendario: () -> Unit,  // 👈 nuevo: para “Notificaciones”
-    onIrRegistro: () -> Unit,    // opcional para otra tarjeta
+    onIrCalendario: () -> Unit,
+    onIrRegistro: () -> Unit,
     navController: NavController
 ) {
     val colores = MaterialTheme.colorScheme
@@ -50,7 +50,7 @@ fun PantallaInicio(
                 .padding(16.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            // Encabezado
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -65,7 +65,7 @@ fun PantallaInicio(
 
             Spacer(Modifier.height(12.dp))
 
-            // Grid 2x2
+
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TarjetaInicio(
                     titulo = "Primero Auxilios",
@@ -84,7 +84,7 @@ fun PantallaInicio(
             Spacer(Modifier.height(12.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // 👇 “Notificaciones” ahora llama al Calendario
+
                 TarjetaInicio(
                     titulo = "Notificaciones",
                     imagen = R.drawable.notificaciones,

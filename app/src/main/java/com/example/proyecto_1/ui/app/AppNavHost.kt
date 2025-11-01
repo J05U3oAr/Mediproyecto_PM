@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/proyecto_1/ui/app/AppNavHost.kt
 package com.example.proyecto_1.ui.app
 
 import androidx.compose.runtime.Composable
@@ -7,11 +6,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
-// ----- Destinos (type-safe @Serializable) -----
 import com.example.proyecto_1.ui.feature.login.Login
 import com.example.proyecto_1.ui.feature.inicio.Inicio
 
-// ----- Pantallas / registro de grafos por feature -----
 import com.example.proyecto_1.ui.feature.login.PantallaAuth
 import com.example.proyecto_1.ui.feature.inicio.registrarGrafoInicio
 import com.example.proyecto_1.ui.feature.mapa.registrarGrafoMapa
@@ -27,20 +24,15 @@ fun AppNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = Login   // 👈 start con el destino @Serializable de Login
+        startDestination = Login
     ) {
-        // ---------------- LOGIN ----------------
         composable<Login> {
-            // Entrar sin validar datos: al tocar "Continuar" ir a INICIO
+
             PantallaAuth(
                 onContinuar = {
                     navController.navigate(Inicio) {
-                        // Quita Login del back stack para que "Atrás" no regrese al login
-                        // Si tu versión de Navigation soporta popUpTo<T>(), usa esta:
-                        popUpTo<Login> { inclusive = true }
 
-                        // Si te marcara error esa línea, usa este Fallback:
-                        // popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        popUpTo<Login> { inclusive = true }
 
                         launchSingleTop = true
                     }
@@ -48,13 +40,12 @@ fun AppNavHost() {
             )
         }
 
-        // --------- FEATURES (registra TODOS tus subgrafos) ----------
-        registrarGrafoInicio(navController)           // incluye PantallaInicio
+        registrarGrafoInicio(navController)
         registrarGrafoMapa(navController)
         registrarGrafoLlamadas(navController)
         registrarGrafoRegistro(navController)
         registrarGrafoCalendario(navController)
         registrarGrafoPrimerosAuxilios(navController)
-        registrarGrafoPerfil(navController)           // tu pantalla de perfil
+        registrarGrafoPerfil(navController)
     }
 }

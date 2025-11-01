@@ -35,7 +35,7 @@ fun BarraInferior(
     val items = listOf(
         Item(Icons.Filled.Home, "Inicio", Inicio),
         Item(Icons.Filled.Info, "Registro", Registro),
-        Item(Icons.Filled.AccountCircle, "Info", Perfil) // <- derecha: PERFIL
+        Item(Icons.Filled.AccountCircle, "Info", Perfil)
     )
 
     Surface(

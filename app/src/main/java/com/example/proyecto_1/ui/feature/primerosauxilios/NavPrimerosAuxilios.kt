@@ -9,7 +9,7 @@ fun NavGraphBuilder.registrarGrafoPrimerosAuxilios(nav: NavController) {
         PantallaPrimerosAuxilios(
             navController = nav,
             onVolver = { nav.popBackStack() },
-            onAbrirGuia = { /* si luego agregas detalle: nav.navigate(DetalleGuia(it)) */ },
+            onAbrirGuia = {},
             mostrarBarraInferior = true
         )
     }

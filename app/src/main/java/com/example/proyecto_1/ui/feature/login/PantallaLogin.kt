@@ -19,7 +19,7 @@ import com.example.calendary.R
 
 @Composable
 fun PantallaAuth(
-    onContinuar: (() -> Unit)? = null  // si lo conectas al NavHost, pásale la navegación aquí
+    onContinuar: (() -> Unit)? = null
 ) {
     var esLogin by remember { mutableStateOf(true) }
 
@@ -126,7 +126,6 @@ fun FormularioLogin(
             Text("Continuar")
         }
 
-        // --- Guarda este bloque comentado si luego quieres reactivar la validación ---
         /*
         Button(
             onClick = {
@@ -151,7 +150,7 @@ fun FormularioLogin(
             )
         ) { Text("Continuar") }
         */
-        // ---------------------------------------------------------------------------
+
 
         TextButton(onClick = onToggle) {
             Text("¿No tienes cuenta? Regístrate aquí")
@@ -224,7 +223,6 @@ fun FormularioRegistro(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // También entra sin validar (modo demo)
         Button(
             onClick = {
                 onContinuar?.invoke()
