@@ -5,5 +5,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 
 fun NavGraphBuilder.registrarGrafoMapa(nav: NavController) {
-    composable<MapaContactos> { PantallaMapaContactos() }
+    composable<MapaContactos> {
+        PantallaMapaContactos(
+            onVolver = { nav.popBackStack() }
+        )
+    }
 }
