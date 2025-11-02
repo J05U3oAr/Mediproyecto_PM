@@ -15,7 +15,8 @@ fun NavGraphBuilder.registrarGrafoPerfil(nav: NavController) {
                     popUpTo(Inicio) { inclusive = true }
                     launchSingleTop = true
                 }
-            }
+            },
+            navController = nav
         )
     }
 }
