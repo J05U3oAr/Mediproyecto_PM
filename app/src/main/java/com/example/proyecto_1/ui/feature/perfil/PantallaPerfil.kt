@@ -8,8 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,17 +20,23 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.calendary.R
 import com.example.proyecto_1.data.AppDataManager
+import com.example.proyecto_1.data.SessionManager
 import com.example.proyecto_1.ui.componentes.BarraInferior
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaPerfil(
+    sessionManager: SessionManager,
     onCerrarSesion: () -> Unit,
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
     // Obtener los datos del usuario desde el gestor global
     val usuario = AppDataManager.usuarioRegistro.value
+    val userEmail = sessionManager.getUserEmail()
+
+    // Estado para el diálogo de confirmación
+    var mostrarDialogoCerrarSesion by remember { mutableStateOf(false) }
 
     // Obtener la ruta actual para la barra inferior
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -80,11 +85,49 @@ fun PantallaPerfil(
                     .clip(CircleShape)
             )
 
+            // Mostrar correo del usuario
+            if (userEmail.isNotBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Cuenta",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            userEmail,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
             // Información del usuario
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Text(
+                    "Información Médica",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
                 // Nombre
                 InfoCard(
                     titulo = "Nombre",
@@ -152,11 +195,7 @@ fun PantallaPerfil(
 
             // Botón de cerrar sesión
             Button(
-                onClick = {
-                    // Resetear todos los datos al cerrar sesión
-                    AppDataManager.resetearDatos()
-                    onCerrarSesion()
-                },
+                onClick = { mostrarDialogoCerrarSesion = true },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError
@@ -168,6 +207,40 @@ fun PantallaPerfil(
 
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    // Diálogo de confirmación para cerrar sesión
+    if (mostrarDialogoCerrarSesion) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoCerrarSesion = false },
+            title = {
+                Text(
+                    "Cerrar sesión",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("¿Estás seguro que deseas cerrar sesión?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        AppDataManager.resetearDatos()
+                        onCerrarSesion()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Cerrar sesión")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogoCerrarSesion = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 

@@ -3,7 +3,9 @@ package com.example.proyecto_1.ui.feature.registro
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,19 +17,30 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.proyecto_1.data.AppDataManager
+import com.example.proyecto_1.data.SessionManager
 import com.example.proyecto_1.data.UsuarioRegistro
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaRegistro() {
+fun PantallaRegistro(
+    sessionManager: SessionManager,
+    onPerfilCompletado: () -> Unit = {}
+) {
     val cs = MaterialTheme.colorScheme
     val context = LocalContext.current
 
     // Obtener los datos actuales del usuario
     val usuarioActual = AppDataManager.usuarioRegistro.value
 
+    // Si el usuario ya tiene nombre guardado, usarlo
+    val nombreInicial = if (usuarioActual.nombre != "Invitado") {
+        usuarioActual.nombre
+    } else {
+        sessionManager.getUserName()
+    }
+
     // Estados locales para los campos
-    var nombre by remember { mutableStateOf(usuarioActual.nombre) }
+    var nombre by remember { mutableStateOf(nombreInicial) }
     var edad by remember { mutableStateOf(usuarioActual.edad) }
     var genero by remember { mutableStateOf(usuarioActual.genero) }
     var tipoSangre by remember { mutableStateOf(usuarioActual.tipoSangre) }
@@ -45,6 +58,7 @@ fun PantallaRegistro() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -67,6 +81,23 @@ fun PantallaRegistro() {
             )
         }
 
+        // Mensaje de bienvenida si es primera vez
+        if (!sessionManager.isProfileCompleted()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = cs.primaryContainer
+                )
+            ) {
+                Text(
+                    text = "¡Bienvenido/a! Por favor completa tu perfil médico.",
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
         // Campo Nombre
         OutlinedTextField(
             value = nombre,
@@ -85,7 +116,7 @@ fun PantallaRegistro() {
             // Campo Edad
             OutlinedTextField(
                 value = edad,
-                onValueChange = { if (it.length <= 3) edad = it },
+                onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) edad = it },
                 label = { Text("Edad") },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
@@ -231,9 +262,14 @@ fun PantallaRegistro() {
 
                         Toast.makeText(
                             context,
-                            "✓ Datos guardados correctamente",
+                            "✓ Perfil guardado correctamente",
                             Toast.LENGTH_LONG
                         ).show()
+
+                        // Si es la primera vez, navegar a Inicio
+                        if (!sessionManager.isProfileCompleted()) {
+                            onPerfilCompletado()
+                        }
                     }
                 },
                 shape = RoundedCornerShape(40.dp),
@@ -246,7 +282,7 @@ fun PantallaRegistro() {
                     .height(64.dp)
             ) {
                 Text(
-                    "Guardar",
+                    if (!sessionManager.isProfileCompleted()) "Continuar" else "Guardar",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center

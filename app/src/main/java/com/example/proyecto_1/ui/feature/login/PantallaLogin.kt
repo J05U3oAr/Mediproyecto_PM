@@ -10,16 +10,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.calendary.R
+import com.example.proyecto_1.data.SessionManager
 
 @Composable
 fun PantallaAuth(
-    onContinuar: (() -> Unit)? = null
+    sessionManager: SessionManager,
+    onLoginExitoso: (email: String, nombre: String) -> Unit
 ) {
     var esLogin by remember { mutableStateOf(true) }
 
@@ -47,13 +51,15 @@ fun PantallaAuth(
 
             if (esLogin) {
                 FormularioLogin(
+                    sessionManager = sessionManager,
                     onToggle = { esLogin = false },
-                    onContinuar = onContinuar
+                    onLoginExitoso = onLoginExitoso
                 )
             } else {
                 FormularioRegistro(
+                    sessionManager = sessionManager,
                     onToggle = { esLogin = true },
-                    onContinuar = onContinuar
+                    onRegistroExitoso = onLoginExitoso
                 )
             }
         }
@@ -62,12 +68,15 @@ fun PantallaAuth(
 
 @Composable
 fun FormularioLogin(
+    sessionManager: SessionManager,
     onToggle: () -> Unit,
-    onContinuar: (() -> Unit)? = null
+    onLoginExitoso: (email: String, nombre: String) -> Unit
 ) {
-    val contexto = androidx.compose.ui.platform.LocalContext.current
+    val contexto = LocalContext.current
     var correo by remember { mutableStateOf("") }
     var contra by remember { mutableStateOf("") }
+    var mostrarError by remember { mutableStateOf(false) }
+    var mensajeError by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -82,37 +91,77 @@ fun FormularioLogin(
         )
 
         Text(
-            text = "Introduce tu correo y contraseña",
+            text = "Usa tu correo institucional UVG",
             fontSize = 14.sp,
             color = Color.Gray
         )
 
         OutlinedTextField(
             value = correo,
-            onValueChange = { correo = it },
+            onValueChange = {
+                correo = it
+                mostrarError = false
+            },
             label = { Text("Correo electrónico") },
-            placeholder = { Text("email@domain.com") },
+            placeholder = { Text("ejemplo@uvg.edu.gt") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mostrarError
         )
 
         OutlinedTextField(
             value = contra,
-            onValueChange = { contra = it },
+            onValueChange = {
+                contra = it
+                mostrarError = false
+            },
             label = { Text("Contraseña") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mostrarError
         )
 
-        // OPCIÓN A: entrar sin validar nada
+        if (mostrarError) {
+            Text(
+                text = mensajeError,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 14.sp
+            )
+        }
+
         Button(
             onClick = {
-                onContinuar?.invoke()
-                // Si no pasas navegación, muestra un aviso y continúa
-                if (onContinuar == null) {
-                    Toast.makeText(contexto, "Entrando…", Toast.LENGTH_SHORT).show()
+                // Validación del correo
+                when {
+                    correo.isBlank() || contra.isBlank() -> {
+                        mostrarError = true
+                        mensajeError = "Por favor completa todos los campos"
+                    }
+                    !Patterns.EMAIL_ADDRESS.matcher(correo).matches() -> {
+                        mostrarError = true
+                        mensajeError = "Correo electrónico inválido"
+                    }
+                    !correo.endsWith("@uvg.edu.gt") -> {
+                        mostrarError = true
+                        mensajeError = "Debes usar tu correo institucional @uvg.edu.gt"
+                    }
+                    contra.length < 6 -> {
+                        mostrarError = true
+                        mensajeError = "La contraseña debe tener al menos 6 caracteres"
+                    }
+                    else -> {
+                        // Login exitoso
+                        val nombre = correo.substringBefore("@")
+                        Toast.makeText(
+                            contexto,
+                            "¡Bienvenido/a!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        onLoginExitoso(correo, nombre)
+                    }
                 }
             },
             modifier = Modifier
@@ -123,34 +172,8 @@ fun FormularioLogin(
                 contentColor = Color.White
             )
         ) {
-            Text("Continuar")
+            Text("Iniciar sesión")
         }
-
-        /*
-        Button(
-            onClick = {
-                if (correo.isNotEmpty() &&
-                    Patterns.EMAIL_ADDRESS.matcher(correo).matches() &&
-                    contra.isNotEmpty()
-                ) {
-                    onContinuar?.invoke()
-                    if (onContinuar == null) {
-                        Toast.makeText(contexto, "Inicio de sesión exitoso", Toast.LENGTH_LONG).show()
-                    }
-                } else {
-                    Toast.makeText(contexto, "Datos inválidos", Toast.LENGTH_SHORT).show()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black,
-                contentColor = Color.White
-            )
-        ) { Text("Continuar") }
-        */
-
 
         TextButton(onClick = onToggle) {
             Text("¿No tienes cuenta? Regístrate aquí")
@@ -160,14 +183,17 @@ fun FormularioLogin(
 
 @Composable
 fun FormularioRegistro(
+    sessionManager: SessionManager,
     onToggle: () -> Unit,
-    onContinuar: (() -> Unit)? = null
+    onRegistroExitoso: (email: String, nombre: String) -> Unit
 ) {
-    val contexto = androidx.compose.ui.platform.LocalContext.current
+    val contexto = LocalContext.current
     var nombre by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var contra by remember { mutableStateOf("") }
     var confirmar by remember { mutableStateOf("") }
+    var mostrarError by remember { mutableStateOf(false) }
+    var mensajeError by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -182,52 +208,105 @@ fun FormularioRegistro(
         )
 
         Text(
-            text = "Introduce tu información para registrarte en la app",
+            text = "Usa tu correo institucional UVG",
             fontSize = 14.sp,
             color = Color.Gray
         )
 
         OutlinedTextField(
             value = nombre,
-            onValueChange = { nombre = it },
+            onValueChange = {
+                nombre = it
+                mostrarError = false
+            },
             label = { Text("Nombre completo") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mostrarError && nombre.isBlank()
         )
 
         OutlinedTextField(
             value = correo,
-            onValueChange = { correo = it },
+            onValueChange = {
+                correo = it
+                mostrarError = false
+            },
             label = { Text("Correo electrónico") },
-            placeholder = { Text("email@domain.com") },
+            placeholder = { Text("ejemplo@uvg.edu.gt") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mostrarError
         )
 
         OutlinedTextField(
             value = contra,
-            onValueChange = { contra = it },
+            onValueChange = {
+                contra = it
+                mostrarError = false
+            },
             label = { Text("Contraseña") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mostrarError
         )
 
         OutlinedTextField(
             value = confirmar,
-            onValueChange = { confirmar = it },
+            onValueChange = {
+                confirmar = it
+                mostrarError = false
+            },
             label = { Text("Confirmar contraseña") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mostrarError
         )
+
+        if (mostrarError) {
+            Text(
+                text = mensajeError,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 14.sp
+            )
+        }
 
         Button(
             onClick = {
-                onContinuar?.invoke()
-                if (onContinuar == null) {
-                    Toast.makeText(contexto, "Entrando…", Toast.LENGTH_SHORT).show()
+                when {
+                    nombre.isBlank() || correo.isBlank() || contra.isBlank() || confirmar.isBlank() -> {
+                        mostrarError = true
+                        mensajeError = "Por favor completa todos los campos"
+                    }
+                    !Patterns.EMAIL_ADDRESS.matcher(correo).matches() -> {
+                        mostrarError = true
+                        mensajeError = "Correo electrónico inválido"
+                    }
+                    !correo.endsWith("@uvg.edu.gt") -> {
+                        mostrarError = true
+                        mensajeError = "Debes usar tu correo institucional @uvg.edu.gt"
+                    }
+                    contra.length < 6 -> {
+                        mostrarError = true
+                        mensajeError = "La contraseña debe tener al menos 6 caracteres"
+                    }
+                    contra != confirmar -> {
+                        mostrarError = true
+                        mensajeError = "Las contraseñas no coinciden"
+                    }
+                    else -> {
+                        // Registro exitoso
+                        Toast.makeText(
+                            contexto,
+                            "¡Cuenta creada exitosamente!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        onRegistroExitoso(correo, nombre)
+                    }
                 }
             },
             modifier = Modifier

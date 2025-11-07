@@ -29,13 +29,14 @@ fun BarraInferior(
     data class Item(
         val icon: androidx.compose.ui.graphics.vector.ImageVector,
         val label: String,
-        val dest: Any
+        val dest: Any,
+        val routeName: String
     )
 
     val items = listOf(
-        Item(Icons.Filled.Home, "Inicio", Inicio),
-        Item(Icons.Filled.Info, "Registro", Registro),
-        Item(Icons.Filled.AccountCircle, "Info", Perfil)
+        Item(Icons.Filled.Home, "Inicio", Inicio, "Inicio"),
+        Item(Icons.Filled.Info, "Registro", Registro, "Registro"),
+        Item(Icons.Filled.AccountCircle, "Perfil", Perfil, "Perfil")
     )
 
     Surface(
@@ -50,22 +51,42 @@ fun BarraInferior(
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
-                val selected = selectedRoute?.contains(item.dest::class.simpleName ?: "") == true
+                // Verificar si esta ruta está seleccionada
+                val selected = selectedRoute?.contains(item.routeName, ignoreCase = true) == true
 
                 Column(
                     modifier = Modifier
                         .widthIn(min = 90.dp)
-                        .clickable { navController.navigate(item.dest) },
+                        .clickable {
+                            // Navegar solo si no estamos ya en esa ruta
+                            if (!selected) {
+                                navController.navigate(item.dest) {
+                                    // Evitar múltiples copias de la misma pantalla
+                                    launchSingleTop = true
+                                    // Restaurar el estado si volvemos a una pantalla anterior
+                                    restoreState = true
+                                }
+                            }
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(if (selected) c.onPrimary.copy(alpha = .25f) else c.primary),
+                            .background(
+                                if (selected)
+                                    c.onPrimary.copy(alpha = .25f)
+                                else
+                                    c.primary
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(item.icon, contentDescription = null, tint = c.onPrimary)
+                        Icon(
+                            item.icon,
+                            contentDescription = item.label,
+                            tint = c.onPrimary
+                        )
                     }
                     Text(
                         text = item.label,
