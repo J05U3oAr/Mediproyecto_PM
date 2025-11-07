@@ -20,7 +20,7 @@ fun AppNavHost(sessionManager: SessionManager) {
     val navController: NavHostController = rememberNavController()
 
     // Determinar la pantalla inicial según el estado de la sesión
-    val startDestination = when {
+    val startDestination: Any = when {
         !sessionManager.isLoggedIn() -> Login
         !sessionManager.isProfileCompleted() -> Registro
         else -> Inicio
@@ -30,6 +30,7 @@ fun AppNavHost(sessionManager: SessionManager) {
         navController = navController,
         startDestination = startDestination
     ) {
+        // ✅ PRIMERO: Registra Login
         composable<Login> {
             PantallaAuth(
                 sessionManager = sessionManager,
@@ -39,13 +40,14 @@ fun AppNavHost(sessionManager: SessionManager) {
 
                     // Navegar a Registro para completar perfil
                     navController.navigate(Registro) {
-                        popUpTo<Login> { inclusive = true }
+                        popUpTo(Login) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
             )
         }
 
+        // ✅ LUEGO: Registra todos los demás destinos
         registrarGrafoInicio(navController)
         registrarGrafoMapa(navController)
         registrarGrafoLlamadas(navController)

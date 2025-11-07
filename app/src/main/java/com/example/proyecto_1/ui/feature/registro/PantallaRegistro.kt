@@ -260,16 +260,21 @@ fun PantallaRegistro(
                         )
                         AppDataManager.actualizarUsuario(nuevoUsuario)
 
+                        // ✅ NUEVO: Mostrar mensaje diferente según el caso
+                        val mensaje = if (!sessionManager.isProfileCompleted()) {
+                            "✓ Perfil completado. ¡Bienvenido/a!"
+                        } else {
+                            "✓ Perfil actualizado correctamente"
+                        }
+
                         Toast.makeText(
                             context,
-                            "✓ Perfil guardado correctamente",
+                            mensaje,
                             Toast.LENGTH_LONG
                         ).show()
 
-                        // Si es la primera vez, navegar a Inicio
-                        if (!sessionManager.isProfileCompleted()) {
-                            onPerfilCompletado()
-                        }
+                        // ✅ SIEMPRE navegar a Inicio después de guardar
+                        onPerfilCompletado()
                     }
                 },
                 shape = RoundedCornerShape(40.dp),
