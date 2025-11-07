@@ -232,6 +232,28 @@ fun PantallaRegistro(
             shape = RoundedCornerShape(10.dp)
         )
 
+        // ✅ NUEVO: Botón para regresar al menú principal (solo si el perfil ya está completado)
+        if (sessionManager.isProfileCompleted()) {
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    onPerfilCompletado()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = cs.primary
+                )
+            ) {
+                Text(
+                    "Regresar al menú principal",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
         Spacer(Modifier.weight(1f))
 
         // Botón Guardar
@@ -260,7 +282,6 @@ fun PantallaRegistro(
                         )
                         AppDataManager.actualizarUsuario(nuevoUsuario)
 
-                        // ✅ NUEVO: Mostrar mensaje diferente según el caso
                         val mensaje = if (!sessionManager.isProfileCompleted()) {
                             "✓ Perfil completado. ¡Bienvenido/a!"
                         } else {
@@ -273,7 +294,7 @@ fun PantallaRegistro(
                             Toast.LENGTH_LONG
                         ).show()
 
-                        // ✅ SIEMPRE navegar a Inicio después de guardar
+                        // Siempre navegar a Inicio después de guardar
                         onPerfilCompletado()
                     }
                 },
