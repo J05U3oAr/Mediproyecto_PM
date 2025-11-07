@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.proyecto_1.data.SessionManager
 import com.example.proyecto_1.ui.app.Inicio
+import com.example.proyecto_1.ui.app.Registro  // ← Asegúrate de importar este
 
 fun NavGraphBuilder.registrarGrafoRegistro(
     nav: NavController,
@@ -14,10 +15,7 @@ fun NavGraphBuilder.registrarGrafoRegistro(
         PantallaRegistro(
             sessionManager = sessionManager,
             onPerfilCompletado = {
-                // Marcar perfil como completado
                 sessionManager.markProfileCompleted()
-
-                // Navegar a Inicio
                 nav.navigate(Inicio) {
                     popUpTo<Registro> { inclusive = true }
                     launchSingleTop = true
