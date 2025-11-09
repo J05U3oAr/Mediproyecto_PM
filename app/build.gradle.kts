@@ -2,7 +2,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    // 🔑 Necesario para @Serializable en destinos type-safe
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 }
 
@@ -46,7 +45,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.2")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("androidx.navigation:navigation-compose:2.8.3")
 
     // Compose BOM + UI + Material3
     implementation(platform("androidx.compose:compose-bom:2024.09.03"))
@@ -55,16 +53,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 
-    // 🧭 Navigation Compose (2.8+ soporta navigate(obj) con @Serializable)
-    implementation("androidx.navigation:navigation-compose:2.8.2")
-
-    // 🔑 Kotlin Serialization (para @Serializable en destinos)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-
-    // Extras que ya usabas
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("androidx.compose.material:material-icons-extended:1.7.2")
-
+    // Google Maps y Location Services
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.maps.android:maps-compose:4.3.0")
     // Test
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.03"))

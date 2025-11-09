@@ -167,11 +167,27 @@ fun PantallaPerfil(
                 }
 
                 // Contacto de emergencia
-                if (usuario.contactoEmergencia.isNotBlank()) {
-                    InfoCard(
-                        titulo = "Contacto de emergencia",
-                        valor = usuario.contactoEmergencia
+                if (usuario.contactoEmergenciaNombre.isNotBlank() || usuario.contactoEmergenciaNumero.isNotBlank()) {
+                    Text(
+                        "Contacto de Emergencia",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.primary
                     )
+
+                    if (usuario.contactoEmergenciaNombre.isNotBlank()) {
+                        InfoCard(
+                            titulo = "Nombre",
+                            valor = usuario.contactoEmergenciaNombre
+                        )
+                    }
+
+                    if (usuario.contactoEmergenciaNumero.isNotBlank()) {
+                        InfoCard(
+                            titulo = "Teléfono",
+                            valor = usuario.contactoEmergenciaNumero
+                        )
+                    }
                 }
 
                 // Información del equipo de desarrollo

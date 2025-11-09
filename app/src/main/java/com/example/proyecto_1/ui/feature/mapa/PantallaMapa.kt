@@ -1,7 +1,11 @@
 package com.example.proyecto_1.ui.feature.mapa
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,25 +18,91 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.proyecto_1.data.AppDataManager
 import com.example.proyecto_1.data.ContactoEmergencia
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
     val c = MaterialTheme.colorScheme
+    val context = LocalContext.current
+
     var showAgregarDialog by remember { mutableStateOf(false) }
     var showAlertaDialog by remember { mutableStateOf(false) }
     var contactoSeleccionado by remember { mutableStateOf<ContactoEmergencia?>(null) }
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    var locationPermissionGranted by remember { mutableStateOf(false) }
 
     // Usar los contactos del gestor global
     val contactos = AppDataManager.contactos
+    val usuario = AppDataManager.usuarioRegistro.value
+
+    // Launcher para permisos de ubicación
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        locationPermissionGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (locationPermissionGranted) {
+            // Obtener ubicación
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            try {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    location?.let {
+                        currentLocation = LatLng(it.latitude, it.longitude)
+                    }
+                }
+            } catch (e: SecurityException) {
+                Toast.makeText(context, "Error al obtener ubicación", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Launcher para permiso de llamada
+    val callPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            contactoSeleccionado?.let { contacto ->
+                try {
+                    val intent = Intent(Intent.ACTION_CALL).apply {
+                        data = Uri.parse("tel:${contacto.telefono}")
+                    }
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(
+                        context,
+                        "Error al realizar la llamada: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        } else {
+            Toast.makeText(context, "Permiso de llamada denegado", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Solicitar permisos al iniciar
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -69,43 +139,56 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
         ) {
             Spacer(Modifier.height(8.dp))
 
-            // Mapa con pins de contactos
+            // Mapa real con Google Maps
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(c.surfaceVariant)
             ) {
-                Canvas(Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-                    val pin = c.primary
-
-                    // Posiciones de los contactos en el mapa
-                    val positions = listOf(
-                        0.15f to 0.25f,
-                        0.35f to 0.35f,
-                        0.55f to 0.20f,
-                        0.72f to 0.45f,
-                        0.25f to 0.60f,
-                        0.50f to 0.70f,
-                        0.80f to 0.30f
+                if (locationPermissionGranted && currentLocation != null) {
+                    AndroidView(
+                        factory = { ctx ->
+                            MapView(ctx).apply {
+                                onCreate(null)
+                                onResume()
+                                getMapAsync { googleMap ->
+                                    currentLocation?.let { location ->
+                                        googleMap.moveCamera(
+                                            CameraUpdateFactory.newLatLngZoom(location, 15f)
+                                        )
+                                        googleMap.addMarker(
+                                            MarkerOptions()
+                                                .position(location)
+                                                .title("Tu ubicación")
+                                        )
+                                    }
+                                    googleMap.uiSettings.isZoomControlsEnabled = true
+                                    googleMap.uiSettings.isMyLocationButtonEnabled = true
+                                    try {
+                                        googleMap.isMyLocationEnabled = true
+                                    } catch (e: SecurityException) {
+                                        // Ignorar si no hay permisos
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
-
-                    positions.take(contactos.size).forEach { (x, y) ->
-                        // Círculo blanco de fondo
-                        drawCircle(
-                            Color.White,
-                            radius = 16f,
-                            center = Offset(w * x, h * y)
-                        )
-                        // Pin de color
-                        drawCircle(
-                            pin,
-                            radius = 8f,
-                            center = Offset(w * x, h * y)
-                        )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Obteniendo ubicación...",
+                                color = c.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -142,10 +225,45 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Incluir el contacto de emergencia del registro
+                if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
+                    item {
+                        ItemContacto(
+                            contacto = ContactoEmergencia(
+                                id = 0,
+                                nombre = usuario.contactoEmergenciaNombre,
+                                telefono = usuario.contactoEmergenciaNumero,
+                                relacion = "Contacto principal"
+                            ),
+                            onClick = {
+                                contactoSeleccionado = ContactoEmergencia(
+                                    id = 0,
+                                    nombre = usuario.contactoEmergenciaNombre,
+                                    telefono = usuario.contactoEmergenciaNumero,
+                                    relacion = "Contacto principal"
+                                )
+                            },
+                            onLlamar = {
+                                contactoSeleccionado = ContactoEmergencia(
+                                    id = 0,
+                                    nombre = usuario.contactoEmergenciaNombre,
+                                    telefono = usuario.contactoEmergenciaNumero,
+                                    relacion = "Contacto principal"
+                                )
+                                callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                            }
+                        )
+                    }
+                }
+
                 items(contactos.toList()) { contacto ->
                     ItemContacto(
                         contacto = contacto,
-                        onClick = { contactoSeleccionado = contacto }
+                        onClick = { contactoSeleccionado = contacto },
+                        onLlamar = {
+                            contactoSeleccionado = contacto
+                            callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                        }
                     )
                 }
             }
@@ -174,21 +292,88 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
                     tint = Color(0xFFF44336)
                 )
             },
-            title = { Text("Alerta Enviada", fontWeight = FontWeight.Bold) },
+            title = { Text("Enviar Alerta de Emergencia", fontWeight = FontWeight.Bold) },
             text = {
-                Text(
-                    "Se ha enviado una alerta de emergencia a todos tus contactos con tu ubicación actual.",
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                Column {
+                    Text(
+                        "Se enviará un mensaje de WhatsApp con el texto 'emergencia' y tu ubicación a todos tus contactos de emergencia.",
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    if (currentLocation != null) {
+                        Text(
+                            "Ubicación: ${currentLocation!!.latitude}, ${currentLocation!!.longitude}",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
             },
             confirmButton = {
                 Button(
-                    onClick = { showAlertaDialog = false },
+                    onClick = {
+                        // Enviar mensaje por WhatsApp a todos los contactos
+                        val ubicacionTexto = if (currentLocation != null) {
+                            "\nUbicación: https://maps.google.com/?q=${currentLocation!!.latitude},${currentLocation!!.longitude}"
+                        } else {
+                            ""
+                        }
+
+                        // Lista de todos los contactos incluyendo el principal
+                        val todosContactos = mutableListOf<ContactoEmergencia>()
+                        if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
+                            todosContactos.add(
+                                ContactoEmergencia(
+                                    0,
+                                    usuario.contactoEmergenciaNombre,
+                                    usuario.contactoEmergenciaNumero,
+                                    "Principal"
+                                )
+                            )
+                        }
+                        todosContactos.addAll(contactos)
+
+                        if (todosContactos.isEmpty()) {
+                            Toast.makeText(
+                                context,
+                                "No hay contactos de emergencia configurados",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            todosContactos.forEach { contacto ->
+                                try {
+                                    val numeroLimpio = contacto.telefono.replace("[^0-9+]".toRegex(), "")
+                                    val mensaje = "🚨 EMERGENCIA 🚨$ubicacionTexto"
+                                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                                        data = Uri.parse("https://wa.me/$numeroLimpio?text=${Uri.encode(mensaje)}")
+                                        setPackage("com.whatsapp")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "Error al enviar mensaje a ${contacto.nombre}. Verifica que WhatsApp esté instalado.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                            Toast.makeText(
+                                context,
+                                "Abriendo WhatsApp para ${todosContactos.size} contacto(s)...",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                        showAlertaDialog = false
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFF44336)
                     )
                 ) {
-                    Text("Entendido")
+                    Text("Enviar Alerta")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAlertaDialog = false }) {
+                    Text("Cancelar")
                 }
             }
         )
@@ -220,8 +405,7 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
             dismissButton = {
                 TextButton(
                     onClick = {
-                        // Aquí iría la lógica para llamar
-                        contactoSeleccionado = null
+                        callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
                     }
                 ) {
                     Text("Llamar")
@@ -264,9 +448,13 @@ fun AgregarContactoDialog(
 
                 OutlinedTextField(
                     value = telefono,
-                    onValueChange = { telefono = it },
+                    onValueChange = {
+                        if (it.all { char -> char.isDigit() || char == '+' }) {
+                            telefono = it
+                        }
+                    },
                     label = { Text("Teléfono") },
-                    placeholder = { Text("Ej: 5551-2345") },
+                    placeholder = { Text("Ej: +50212345678") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -337,7 +525,8 @@ private fun BotonAccion(
 @Composable
 private fun ItemContacto(
     contacto: ContactoEmergencia,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLlamar: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -367,13 +556,20 @@ private fun ItemContacto(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Button(
-                onClick = onClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Ver")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onLlamar,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Llamar")
+                }
+                OutlinedButton(
+                    onClick = onClick
+                ) {
+                    Text("Ver")
+                }
             }
         }
     }

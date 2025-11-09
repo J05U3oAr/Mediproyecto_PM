@@ -10,7 +10,8 @@ data class UsuarioRegistro(
     var genero: String = "",
     var tipoSangre: String = "",
     var alergias: String = "",
-    var contactoEmergencia: String = ""
+    var contactoEmergenciaNombre: String = "",
+    var contactoEmergenciaNumero: String = ""
 )
 
 // Modelo de recordatorio médico
@@ -42,7 +43,8 @@ object AppDataManager {
             genero = "",
             tipoSangre = "",
             alergias = "",
-            contactoEmergencia = ""
+            contactoEmergenciaNombre = "",
+            contactoEmergenciaNumero = ""
         )
     )
 
@@ -93,7 +95,8 @@ object AppDataManager {
             genero = "",
             tipoSangre = "",
             alergias = "",
-            contactoEmergencia = ""
+            contactoEmergenciaNombre = "",
+            contactoEmergenciaNumero = ""
         )
         recordatorios.clear()
         recordatorios.addAll(

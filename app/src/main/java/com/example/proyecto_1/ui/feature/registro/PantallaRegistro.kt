@@ -1,11 +1,21 @@
 package com.example.proyecto_1.ui.feature.registro
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.provider.ContactsContract
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,7 +56,8 @@ fun PantallaRegistro(
     var genero by remember { mutableStateOf(usuarioActual.genero) }
     var tipoSangre by remember { mutableStateOf(usuarioActual.tipoSangre) }
     var alergias by remember { mutableStateOf(usuarioActual.alergias) }
-    var contactoEmergencia by remember { mutableStateOf(usuarioActual.contactoEmergencia) }
+    var contactoEmergenciaNombre by remember { mutableStateOf(usuarioActual.contactoEmergenciaNombre) }
+    var contactoEmergenciaNumero by remember { mutableStateOf(usuarioActual.contactoEmergenciaNumero) }
 
     // Menú desplegable para género
     var generoExpandido by remember { mutableStateOf(false) }
@@ -54,6 +66,73 @@ fun PantallaRegistro(
     // Menú desplegable para tipo de sangre
     var tipoSangreExpandido by remember { mutableStateOf(false) }
     val opcionesTipoSangre = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+
+    // Launcher para solicitar permiso de contactos
+    val contactPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(
+                context,
+                "Permiso de contactos denegado",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    // Launcher para seleccionar contacto
+    val pickContactLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                try {
+                    val cursor = context.contentResolver.query(
+                        uri,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                    cursor?.use {
+                        if (it.moveToFirst()) {
+                            val nameIndex = it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                            val idIndex = it.getColumnIndex(ContactsContract.Contacts._ID)
+
+                            if (nameIndex >= 0) {
+                                contactoEmergenciaNombre = it.getString(nameIndex) ?: ""
+                            }
+
+                            if (idIndex >= 0) {
+                                val contactId = it.getString(idIndex)
+                                val phoneCursor = context.contentResolver.query(
+                                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                    null,
+                                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                    arrayOf(contactId),
+                                    null
+                                )
+                                phoneCursor?.use { pc ->
+                                    if (pc.moveToFirst()) {
+                                        val phoneIndex = pc.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                        if (phoneIndex >= 0) {
+                                            contactoEmergenciaNumero = pc.getString(phoneIndex)?.replace("[^0-9+]".toRegex(), "") ?: ""
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(
+                        context,
+                        "Error al obtener contacto: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -120,7 +199,8 @@ fun PantallaRegistro(
                 label = { Text("Edad") },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             // Dropdown Género
@@ -223,16 +303,58 @@ fun PantallaRegistro(
             color = cs.onSurface
         )
 
+        // Nombre del contacto
         OutlinedTextField(
-            value = contactoEmergencia,
-            onValueChange = { contactoEmergencia = it },
-            placeholder = { Text("Nombre y teléfono") },
+            value = contactoEmergenciaNombre,
+            onValueChange = { contactoEmergenciaNombre = it },
+            label = { Text("Nombre del contacto") },
+            placeholder = { Text("Ej: Juan Pérez") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(10.dp)
         )
 
-        // ✅ NUEVO: Botón para regresar al menú principal (solo si el perfil ya está completado)
+        // Número del contacto con botón para seleccionar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = contactoEmergenciaNumero,
+                onValueChange = {
+                    // Solo permitir números y el símbolo +
+                    if (it.all { char -> char.isDigit() || char == '+' }) {
+                        contactoEmergenciaNumero = it
+                    }
+                },
+                label = { Text("Número de teléfono") },
+                placeholder = { Text("Ej: +50212345678") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+            )
+
+            IconButton(
+                onClick = {
+                    contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                    val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+                    pickContactLauncher.launch(intent)
+                },
+                modifier = Modifier
+                    .size(56.dp)
+                    .padding(top = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Contacts,
+                    contentDescription = "Seleccionar contacto",
+                    tint = cs.primary
+                )
+            }
+        }
+
+        // Botón para regresar al menú principal (solo si el perfil ya está completado)
         if (sessionManager.isProfileCompleted()) {
             Spacer(Modifier.height(8.dp))
 
@@ -263,39 +385,57 @@ fun PantallaRegistro(
         ) {
             Button(
                 onClick = {
-                    // Validar que al menos el nombre esté lleno
-                    if (nombre.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            "Por favor ingresa tu nombre",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        // Guardar los datos
-                        val nuevoUsuario = UsuarioRegistro(
-                            nombre = nombre,
-                            edad = edad,
-                            genero = genero,
-                            tipoSangre = tipoSangre,
-                            alergias = alergias,
-                            contactoEmergencia = contactoEmergencia
-                        )
-                        AppDataManager.actualizarUsuario(nuevoUsuario)
-
-                        val mensaje = if (!sessionManager.isProfileCompleted()) {
-                            "✓ Perfil completado. ¡Bienvenido/a!"
-                        } else {
-                            "✓ Perfil actualizado correctamente"
+                    // Validar que los campos obligatorios estén llenos
+                    when {
+                        nombre.isBlank() -> {
+                            Toast.makeText(
+                                context,
+                                "Por favor ingresa tu nombre",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
+                        contactoEmergenciaNombre.isBlank() -> {
+                            Toast.makeText(
+                                context,
+                                "Por favor ingresa el nombre del contacto de emergencia",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        contactoEmergenciaNumero.isBlank() -> {
+                            Toast.makeText(
+                                context,
+                                "Por favor ingresa el número del contacto de emergencia",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        else -> {
+                            // Guardar los datos
+                            val nuevoUsuario = UsuarioRegistro(
+                                nombre = nombre,
+                                edad = edad,
+                                genero = genero,
+                                tipoSangre = tipoSangre,
+                                alergias = alergias,
+                                contactoEmergenciaNombre = contactoEmergenciaNombre,
+                                contactoEmergenciaNumero = contactoEmergenciaNumero
+                            )
+                            AppDataManager.actualizarUsuario(nuevoUsuario)
 
-                        Toast.makeText(
-                            context,
-                            mensaje,
-                            Toast.LENGTH_LONG
-                        ).show()
+                            val mensaje = if (!sessionManager.isProfileCompleted()) {
+                                "✓ Perfil completado. ¡Bienvenido/a!"
+                            } else {
+                                "✓ Perfil actualizado correctamente"
+                            }
 
-                        // Siempre navegar a Inicio después de guardar
-                        onPerfilCompletado()
+                            Toast.makeText(
+                                context,
+                                mensaje,
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            // Siempre navegar a Inicio después de guardar
+                            onPerfilCompletado()
+                        }
                     }
                 },
                 shape = RoundedCornerShape(40.dp),
