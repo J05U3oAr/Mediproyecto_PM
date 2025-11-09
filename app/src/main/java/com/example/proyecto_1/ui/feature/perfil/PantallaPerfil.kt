@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,7 +22,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.calendary.R
 import com.example.proyecto_1.data.AppDataManager
 import com.example.proyecto_1.data.SessionManager
+import com.example.proyecto_1.data.UsuarioRegistro
+import com.example.proyecto_1.data.database.AppDatabase
 import com.example.proyecto_1.ui.componentes.BarraInferior
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,9 +35,37 @@ fun PantallaPerfil(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // Base de datos
+    val database = remember { AppDatabase.getInstance(context) }
+    val perfilDao = database.perfilMedicoDao()
+
+    val userEmail = sessionManager.getUserEmail()
+
+    // Cargar perfil desde BD
+    LaunchedEffect(userEmail) {
+        if (userEmail.isNotBlank()) {
+            val perfilExistente = perfilDao.obtenerPerfilPorEmail(userEmail)
+            if (perfilExistente != null) {
+                AppDataManager.actualizarUsuario(
+                    UsuarioRegistro(
+                        nombre = perfilExistente.nombre,
+                        edad = perfilExistente.edad,
+                        genero = perfilExistente.genero,
+                        tipoSangre = perfilExistente.tipoSangre,
+                        alergias = perfilExistente.alergias,
+                        contactoEmergenciaNombre = perfilExistente.contactoEmergenciaNombre,
+                        contactoEmergenciaNumero = perfilExistente.contactoEmergenciaNumero
+                    )
+                )
+            }
+        }
+    }
+
     // Obtener los datos del usuario desde el gestor global
     val usuario = AppDataManager.usuarioRegistro.value
-    val userEmail = sessionManager.getUserEmail()
 
     // Estado para el diálogo de confirmación
     var mostrarDialogoCerrarSesion by remember { mutableStateOf(false) }
@@ -236,7 +268,7 @@ fun PantallaPerfil(
                 )
             },
             text = {
-                Text("¿Estás seguro que deseas cerrar sesión?")
+                Text("¿Estás seguro que deseas cerrar sesión? Tu información médica estará guardada cuando vuelvas a iniciar sesión.")
             },
             confirmButton = {
                 Button(

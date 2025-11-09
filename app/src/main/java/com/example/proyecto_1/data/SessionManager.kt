@@ -19,16 +19,19 @@ class SessionManager(context: Context) {
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_PROFILE_COMPLETED = "profile_completed"
+        private const val KEY_HAS_MEDICAL_PROFILE = "has_medical_profile"
     }
 
     /**
      * Guarda la sesión del usuario después del login
      */
-    fun saveLoginSession(email: String, name: String = "") {
+    fun saveLoginSession(email: String, name: String = "", hasMedicalProfile: Boolean = false) {
         prefs.edit().apply {
             putBoolean(KEY_IS_LOGGED_IN, true)
             putString(KEY_USER_EMAIL, email)
             putString(KEY_USER_NAME, name)
+            putBoolean(KEY_HAS_MEDICAL_PROFILE, hasMedicalProfile)
+            putBoolean(KEY_PROFILE_COMPLETED, hasMedicalProfile)
             apply()
         }
     }
@@ -39,6 +42,7 @@ class SessionManager(context: Context) {
     fun markProfileCompleted() {
         prefs.edit().apply {
             putBoolean(KEY_PROFILE_COMPLETED, true)
+            putBoolean(KEY_HAS_MEDICAL_PROFILE, true)
             apply()
         }
     }
@@ -55,6 +59,13 @@ class SessionManager(context: Context) {
      */
     fun isProfileCompleted(): Boolean {
         return prefs.getBoolean(KEY_PROFILE_COMPLETED, false)
+    }
+
+    /**
+     * Verifica si tiene perfil médico guardado
+     */
+    fun hasMedicalProfile(): Boolean {
+        return prefs.getBoolean(KEY_HAS_MEDICAL_PROFILE, false)
     }
 
     /**

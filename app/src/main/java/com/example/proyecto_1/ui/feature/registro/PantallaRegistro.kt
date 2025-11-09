@@ -30,6 +30,9 @@ import androidx.compose.ui.unit.sp
 import com.example.proyecto_1.data.AppDataManager
 import com.example.proyecto_1.data.SessionManager
 import com.example.proyecto_1.data.UsuarioRegistro
+import com.example.proyecto_1.data.database.AppDatabase
+import com.example.proyecto_1.data.database.PerfilMedico
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +42,34 @@ fun PantallaRegistro(
 ) {
     val cs = MaterialTheme.colorScheme
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // Base de datos
+    val database = remember { AppDatabase.getInstance(context) }
+    val perfilDao = database.perfilMedicoDao()
+
+    val userEmail = sessionManager.getUserEmail()
+
+    // Cargar perfil existente si hay
+    LaunchedEffect(userEmail) {
+        if (userEmail.isNotBlank()) {
+            val perfilExistente = perfilDao.obtenerPerfilPorEmail(userEmail)
+            if (perfilExistente != null) {
+                // Cargar datos en AppDataManager
+                AppDataManager.actualizarUsuario(
+                    UsuarioRegistro(
+                        nombre = perfilExistente.nombre,
+                        edad = perfilExistente.edad,
+                        genero = perfilExistente.genero,
+                        tipoSangre = perfilExistente.tipoSangre,
+                        alergias = perfilExistente.alergias,
+                        contactoEmergenciaNombre = perfilExistente.contactoEmergenciaNombre,
+                        contactoEmergenciaNumero = perfilExistente.contactoEmergenciaNumero
+                    )
+                )
+            }
+        }
+    }
 
     // Obtener los datos actuales del usuario
     val usuarioActual = AppDataManager.usuarioRegistro.value
@@ -58,6 +89,20 @@ fun PantallaRegistro(
     var alergias by remember { mutableStateOf(usuarioActual.alergias) }
     var contactoEmergenciaNombre by remember { mutableStateOf(usuarioActual.contactoEmergenciaNombre) }
     var contactoEmergenciaNumero by remember { mutableStateOf(usuarioActual.contactoEmergenciaNumero) }
+    var guardando by remember { mutableStateOf(false) }
+
+    // Actualizar estados cuando cambie usuarioActual
+    LaunchedEffect(usuarioActual) {
+        if (usuarioActual.nombre != "Invitado") {
+            nombre = usuarioActual.nombre
+            edad = usuarioActual.edad
+            genero = usuarioActual.genero
+            tipoSangre = usuarioActual.tipoSangre
+            alergias = usuarioActual.alergias
+            contactoEmergenciaNombre = usuarioActual.contactoEmergenciaNombre
+            contactoEmergenciaNumero = usuarioActual.contactoEmergenciaNumero
+        }
+    }
 
     // Menú desplegable para género
     var generoExpandido by remember { mutableStateOf(false) }
@@ -161,7 +206,7 @@ fun PantallaRegistro(
         }
 
         // Mensaje de bienvenida si es primera vez
-        if (!sessionManager.isProfileCompleted()) {
+        if (!sessionManager.hasMedicalProfile()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -184,7 +229,8 @@ fun PantallaRegistro(
             label = { Text("Nombre completo") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(10.dp)
+            shape = RoundedCornerShape(10.dp),
+            enabled = !guardando
         )
 
         // Fila: Edad y Género
@@ -200,13 +246,14 @@ fun PantallaRegistro(
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = !guardando
             )
 
             // Dropdown Género
             ExposedDropdownMenuBox(
                 expanded = generoExpandido,
-                onExpandedChange = { generoExpandido = it },
+                onExpandedChange = { generoExpandido = it && !guardando },
                 modifier = Modifier.weight(1f)
             ) {
                 OutlinedTextField(
@@ -218,7 +265,8 @@ fun PantallaRegistro(
                     modifier = Modifier
                         .menuAnchor()
                         .fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    enabled = !guardando
                 )
                 ExposedDropdownMenu(
                     expanded = generoExpandido,
@@ -247,7 +295,7 @@ fun PantallaRegistro(
 
         ExposedDropdownMenuBox(
             expanded = tipoSangreExpandido,
-            onExpandedChange = { tipoSangreExpandido = it }
+            onExpandedChange = { tipoSangreExpandido = it && !guardando }
         ) {
             OutlinedTextField(
                 value = tipoSangre,
@@ -258,7 +306,8 @@ fun PantallaRegistro(
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                enabled = !guardando
             )
             ExposedDropdownMenu(
                 expanded = tipoSangreExpandido,
@@ -292,7 +341,8 @@ fun PantallaRegistro(
                 .fillMaxWidth()
                 .heightIn(min = 80.dp),
             shape = RoundedCornerShape(10.dp),
-            maxLines = 3
+            maxLines = 3,
+            enabled = !guardando
         )
 
         // Contacto de emergencia
@@ -311,7 +361,8 @@ fun PantallaRegistro(
             placeholder = { Text("Ej: Juan Pérez") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(10.dp)
+            shape = RoundedCornerShape(10.dp),
+            enabled = !guardando
         )
 
         // Número del contacto con botón para seleccionar
@@ -333,7 +384,8 @@ fun PantallaRegistro(
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                enabled = !guardando
             )
 
             IconButton(
@@ -344,29 +396,29 @@ fun PantallaRegistro(
                 },
                 modifier = Modifier
                     .size(56.dp)
-                    .padding(top = 8.dp)
+                    .padding(top = 8.dp),
+                enabled = !guardando
             ) {
                 Icon(
                     imageVector = Icons.Default.Contacts,
                     contentDescription = "Seleccionar contacto",
-                    tint = cs.primary
+                    tint = if (guardando) cs.onSurface.copy(alpha = 0.38f) else cs.primary
                 )
             }
         }
 
         // Botón para regresar al menú principal (solo si el perfil ya está completado)
-        if (sessionManager.isProfileCompleted()) {
+        if (sessionManager.hasMedicalProfile()) {
             Spacer(Modifier.height(8.dp))
 
             OutlinedButton(
-                onClick = {
-                    onPerfilCompletado()
-                },
+                onClick = { onPerfilCompletado() },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = cs.primary
-                )
+                ),
+                enabled = !guardando
             ) {
                 Text(
                     "Regresar al menú principal",
@@ -409,7 +461,9 @@ fun PantallaRegistro(
                             ).show()
                         }
                         else -> {
-                            // Guardar los datos
+                            guardando = true
+
+                            // Guardar en AppDataManager
                             val nuevoUsuario = UsuarioRegistro(
                                 nombre = nombre,
                                 edad = edad,
@@ -421,20 +475,46 @@ fun PantallaRegistro(
                             )
                             AppDataManager.actualizarUsuario(nuevoUsuario)
 
-                            val mensaje = if (!sessionManager.isProfileCompleted()) {
-                                "✓ Perfil completado. ¡Bienvenido/a!"
-                            } else {
-                                "✓ Perfil actualizado correctamente"
+                            // Guardar en la base de datos
+                            scope.launch {
+                                try {
+                                    val perfilMedico = PerfilMedico(
+                                        emailUsuario = userEmail,
+                                        nombre = nombre,
+                                        edad = edad,
+                                        genero = genero,
+                                        tipoSangre = tipoSangre,
+                                        alergias = alergias,
+                                        contactoEmergenciaNombre = contactoEmergenciaNombre,
+                                        contactoEmergenciaNumero = contactoEmergenciaNumero
+                                    )
+
+                                    perfilDao.insertarPerfil(perfilMedico)
+                                    sessionManager.markProfileCompleted()
+
+                                    val mensaje = if (!sessionManager.hasMedicalProfile()) {
+                                        "✓ Perfil completado. ¡Bienvenido/a!"
+                                    } else {
+                                        "✓ Perfil actualizado correctamente"
+                                    }
+
+                                    Toast.makeText(
+                                        context,
+                                        mensaje,
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    // Siempre navegar a Inicio después de guardar
+                                    onPerfilCompletado()
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "Error al guardar: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    guardando = false
+                                }
                             }
-
-                            Toast.makeText(
-                                context,
-                                mensaje,
-                                Toast.LENGTH_LONG
-                            ).show()
-
-                            // Siempre navegar a Inicio después de guardar
-                            onPerfilCompletado()
                         }
                     }
                 },
@@ -445,14 +525,22 @@ fun PantallaRegistro(
                 ),
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
-                    .height(64.dp)
+                    .height(64.dp),
+                enabled = !guardando
             ) {
-                Text(
-                    if (!sessionManager.isProfileCompleted()) "Continuar" else "Guardar",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
+                if (guardando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = cs.onSecondaryContainer
+                    )
+                } else {
+                    Text(
+                        if (!sessionManager.hasMedicalProfile()) "Continuar" else "Guardar",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 

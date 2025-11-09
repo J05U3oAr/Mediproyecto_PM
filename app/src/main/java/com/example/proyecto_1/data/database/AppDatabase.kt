@@ -6,13 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [Usuario::class],
-    version = 1,
+    entities = [Usuario::class, PerfilMedico::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
+    abstract fun perfilMedicoDao(): PerfilMedicoDao
 
     companion object {
         @Volatile
