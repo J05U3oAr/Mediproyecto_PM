@@ -48,12 +48,8 @@ object AppDataManager {
         )
     )
 
-    // Lista de recordatorios médicos
-    val recordatorios = mutableStateListOf(
-        RecordatorioMedico(1, "Medicina 1", "8:00 a.m.", 17, 9, 2025),
-        RecordatorioMedico(2, "Medicina 2", "10:00 a.m.", 17, 9, 2025),
-        RecordatorioMedico(3, "Cita 1", "5:00 p.m.", 18, 9, 2025)
-    )
+    // Lista de recordatorios médicos - AHORA VACÍA POR DEFECTO
+    val recordatorios = mutableStateListOf<RecordatorioMedico>()
 
     // Lista de contactos de emergencia
     val contactos = mutableStateListOf(
@@ -99,13 +95,6 @@ object AppDataManager {
             contactoEmergenciaNumero = ""
         )
         recordatorios.clear()
-        recordatorios.addAll(
-            listOf(
-                RecordatorioMedico(1, "Medicina 1", "8:00 a.m.", 17, 9, 2025),
-                RecordatorioMedico(2, "Medicina 2", "10:00 a.m.", 17, 9, 2025),
-                RecordatorioMedico(3, "Cita 1", "5:00 p.m.", 18, 9, 2025)
-            )
-        )
         contactos.clear()
         contactos.addAll(
             listOf(

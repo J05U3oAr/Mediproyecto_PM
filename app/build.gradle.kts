@@ -57,6 +57,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.1.0")
     implementation("com.google.maps.android:maps-compose:4.3.0")
+
+    // WorkManager para notificaciones
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     // Test
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.03"))
