@@ -32,6 +32,26 @@ fun PantallaPrimerosAuxilios(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedRoute = backStackEntry?.destination?.route
 
+    // Lista completa de guías con sus archivos PDF correspondientes
+    val guias = listOf(
+        GuiaPrimerosAuxilios("Fracturas", "fracturas.pdf"),
+        GuiaPrimerosAuxilios("Quemaduras", "quemaduras.pdf"),
+        GuiaPrimerosAuxilios("Desmayos", "desmayo.pdf"),
+        GuiaPrimerosAuxilios("Atragantamiento", "guia_atragantamiento_husl.pdf"),
+        GuiaPrimerosAuxilios("Hemorragias (sangrado abundante)", "hemorragias_shocks.pdf"),
+        GuiaPrimerosAuxilios("Cortes y heridas leves", "heridas.pdf"),
+        GuiaPrimerosAuxilios("Picaduras o mordeduras de animales", "picaduras_mordeduras.pdf"),
+        GuiaPrimerosAuxilios("Golpe de calor (insolación)", "golpe_calor.pdf"),
+        GuiaPrimerosAuxilios("Hipotermia", "guia_hipotermia_husl.pdf"),
+        GuiaPrimerosAuxilios("Crisis epiléptica (convulsiones)", "guia_actuacion_epilepsia.pdf"),
+        GuiaPrimerosAuxilios("Ataque cardíaco (infarto agudo)", "guia_ataque_cardiaco_husl.pdf"),
+        GuiaPrimerosAuxilios("Dificultad respiratoria o asma", "guia_asma.pdf"),
+        GuiaPrimerosAuxilios("Intoxicación o envenenamiento", "guia_intoxicaciones_envenenamiento_husl.pdf"),
+        GuiaPrimerosAuxilios("Shock (colapso circulatorio)", "hemorragias_shocks.pdf"),
+        GuiaPrimerosAuxilios("Traumatismo craneal (golpe en la cabeza)", "guia_traumatismo_craneal.pdf"),
+        GuiaPrimerosAuxilios("Reanimación cardiopulmonar (RCP)", "rcp.pdf")
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
