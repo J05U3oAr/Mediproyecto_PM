@@ -3,11 +3,7 @@ package com.example.proyecto_1.ui.feature.primerosauxilios
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import kotlinx.serialization.Serializable
-
-// Destinos de navegación
-@Serializable object PrimerosAuxilios
-@Serializable data class VisualizadorPDF(val nombreArchivo: String)
+import androidx.navigation.toRoute
 
 fun NavGraphBuilder.registrarGrafoPrimerosAuxilios(nav: NavController) {
     // Pantalla principal de Primeros Auxilios
@@ -19,17 +15,16 @@ fun NavGraphBuilder.registrarGrafoPrimerosAuxilios(nav: NavController) {
                 // Navegar a la pantalla del visualizador PDF
                 nav.navigate(VisualizadorPDF(nombreArchivo = nombreArchivo))
             },
-            mostrarBarraInferior = true
+            mostrarBarraInferior = false
         )
     }
 
     // Pantalla del visualizador de PDF
     composable<VisualizadorPDF> { backStackEntry ->
-        val args = backStackEntry.arguments
-        val nombreArchivo = args?.getString("nombreArchivo") ?: ""
+        val args: VisualizadorPDF = backStackEntry.toRoute()
 
         PantallaVisualizadorPDF(
-            nombreArchivo = nombreArchivo,
+            nombreArchivo = args.nombreArchivo,
             onVolver = { nav.popBackStack() }
         )
     }
