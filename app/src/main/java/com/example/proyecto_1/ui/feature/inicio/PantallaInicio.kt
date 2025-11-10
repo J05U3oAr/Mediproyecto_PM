@@ -56,11 +56,7 @@ fun PantallaInicio(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("HusL", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = "Perfil"
-                )
+                Text("HusL", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(12.dp))
