@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyecto_1.data.AppDataManager
 import com.example.proyecto_1.data.RecordatorioMedico
 import com.example.proyecto_1.notifications.NotificationScheduler
@@ -31,9 +32,13 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaCalendar(onVolver: () -> Unit = {}) {
+fun PantallaCalendar(
+    onVolver: () -> Unit = {},
+    viewModel: CalendarioViewModel = viewModel()
+) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+    val uiState by viewModel.uiState.collectAsState()
 
     var mesSeleccionado by remember { mutableStateOf(calendar.get(Calendar.MONTH)) }
     var anioSeleccionado by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
@@ -89,142 +94,176 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
             )
         }
     ) { paddingValues ->
-        Column(
-            Modifier
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White)
         ) {
-            LazyColumn(
-                Modifier
-                    .weight(1f)
-                    .padding(16.dp)
-            ) {
-                // Selector de mes y año
-                item {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            if (uiState.isLoading) {
+                // Pantalla de carga
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        IconButton(onClick = {
-                            if (mesSeleccionado == 0) {
-                                mesSeleccionado = 11
-                                anioSeleccionado--
-                            } else {
-                                mesSeleccionado--
-                            }
-                        }) {
-                            Icon(Icons.Default.ArrowBack, "Mes anterior")
-                        }
-
-                        Text(
-                            "${meses[mesSeleccionado]} $anioSeleccionado",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 6.dp
                         )
-
-                        IconButton(onClick = {
-                            if (mesSeleccionado == 11) {
-                                mesSeleccionado = 0
-                                anioSeleccionado++
-                            } else {
-                                mesSeleccionado++
-                            }
-                        }) {
-                            Icon(Icons.Default.ArrowForward, "Mes siguiente")
-                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Cargando...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black
+                        )
                     }
-                    Spacer(Modifier.height(16.dp))
                 }
-
-                // Calendario
-                item {
-                    CalendarView(
-                        selectedDay = selectedDay,
-                        onDaySelected = { selectedDay = it },
-                        reminders = recordatorios.toList(),
-                        mes = mesSeleccionado,
-                        anio = anioSeleccionado
-                    )
-                    Spacer(Modifier.height(24.dp))
-                }
-
-                // Recordatorios próximos
-                item {
-                    Text(
-                        "Recordatorios próximos",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                }
-
-                val upcomingReminders = recordatorios
-                    .filter {
-                        val fechaRecordatorio = Calendar.getInstance().apply {
-                            set(it.anio, it.mes - 1, it.dia)
-                        }
-                        !fechaRecordatorio.before(Calendar.getInstance())
-                    }
-                    .sortedWith(compareBy({ it.anio }, { it.mes }, { it.dia }))
-                    .take(5)
-
-                if (upcomingReminders.isEmpty()) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFF5F5F5)
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+            } else {
+                // Contenido principal
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.White)
+                ) {
+                    LazyColumn(
+                        Modifier
+                            .weight(1f)
+                            .padding(16.dp)
+                    ) {
+                        // Selector de mes y año
+                        item {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.EventNote,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = Color.Gray
+                                IconButton(onClick = {
+                                    if (mesSeleccionado == 0) {
+                                        mesSeleccionado = 11
+                                        anioSeleccionado--
+                                    } else {
+                                        mesSeleccionado--
+                                    }
+                                }) {
+                                    Icon(Icons.Default.ArrowBack, "Mes anterior")
+                                }
+
+                                Text(
+                                    "${meses[mesSeleccionado]} $anioSeleccionado",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                IconButton(onClick = {
+                                    if (mesSeleccionado == 11) {
+                                        mesSeleccionado = 0
+                                        anioSeleccionado++
+                                    } else {
+                                        mesSeleccionado++
+                                    }
+                                }) {
+                                    Icon(Icons.Default.ArrowForward, "Mes siguiente")
+                                }
+                            }
+                            Spacer(Modifier.height(16.dp))
+                        }
+
+                        // Calendario
+                        item {
+                            CalendarView(
+                                selectedDay = selectedDay,
+                                onDaySelected = { selectedDay = it },
+                                reminders = recordatorios.toList(),
+                                mes = mesSeleccionado,
+                                anio = anioSeleccionado
+                            )
+                            Spacer(Modifier.height(24.dp))
+                        }
+
+                        // Recordatorios próximos
+                        item {
+                            Text(
+                                "Recordatorios próximos",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
+
+                        val upcomingReminders = recordatorios
+                            .filter {
+                                val fechaRecordatorio = Calendar.getInstance().apply {
+                                    set(it.anio, it.mes - 1, it.dia)
+                                }
+                                !fechaRecordatorio.before(Calendar.getInstance())
+                            }
+                            .sortedWith(compareBy({ it.anio }, { it.mes }, { it.dia }))
+                            .take(5)
+
+                        if (upcomingReminders.isEmpty()) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF5F5F5)
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            Icons.Default.EventNote,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp),
+                                            tint = Color.Gray
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(
+                                            "No hay recordatorios programados",
+                                            fontSize = 16.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            items(upcomingReminders) { reminder ->
+                                MedicalReminderCard(
+                                    reminder = reminder,
+                                    onDelete = { showDeleteDialog = reminder }
                                 )
                                 Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "No hay recordatorios programados",
-                                    fontSize = 16.sp,
-                                    color = Color.Gray
-                                )
                             }
                         }
+
+                        item {
+                            Spacer(Modifier.height(24.dp))
+                        }
                     }
-                } else {
-                    items(upcomingReminders) { reminder ->
-                        MedicalReminderCard(
-                            reminder = reminder,
-                            onDelete = { showDeleteDialog = reminder }
-                        )
-                        Spacer(Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { showDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Agregar Nuevo Recordatorio")
                     }
                 }
-
-                item {
-                    Spacer(Modifier.height(24.dp))
-                }
-            }
-
-            Button(
-                onClick = { showDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Agregar Nuevo Recordatorio")
             }
         }
     }
@@ -235,7 +274,6 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
             onDismiss = { showDialog = false },
             onConfirm = { nuevoRecordatorio ->
                 AppDataManager.agregarRecordatorio(nuevoRecordatorio)
-                // Programar la notificación
                 NotificationScheduler.programarNotificacion(context, nuevoRecordatorio)
                 Toast.makeText(
                     context,
@@ -289,7 +327,6 @@ fun PantallaCalendar(onVolver: () -> Unit = {}) {
         )
     }
 }
-
 @Composable
 fun AgregarRecordatorioDialog(
     onDismiss: () -> Unit,

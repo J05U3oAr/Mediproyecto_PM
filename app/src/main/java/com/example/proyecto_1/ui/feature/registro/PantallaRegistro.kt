@@ -21,12 +21,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyecto_1.data.AppDataManager
 import com.example.proyecto_1.data.SessionManager
 import com.example.proyecto_1.data.UsuarioRegistro
@@ -38,11 +40,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun PantallaRegistro(
     sessionManager: SessionManager,
-    onPerfilCompletado: () -> Unit = {}
+    onPerfilCompletado: () -> Unit = {},
+    viewModel: RegistroViewModel = viewModel()
 ) {
     val cs = MaterialTheme.colorScheme
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
 
     // Base de datos
     val database = remember { AppDatabase.getInstance(context) }
@@ -179,307 +183,321 @@ fun PantallaRegistro(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Spacer(Modifier.height(10.dp))
-
-        // Título
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(cs.secondaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "Registro Médico",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                color = cs.onSurface
-            )
-        }
-
-        // Mensaje de bienvenida si es primera vez
-        if (!sessionManager.hasMedicalProfile()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = cs.primaryContainer
-                )
-            ) {
-                Text(
-                    text = "¡Bienvenido/a! Por favor completa tu perfil médico.",
-                    modifier = Modifier.padding(16.dp),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        // Campo Nombre
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre completo") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = RoundedCornerShape(10.dp),
-            enabled = !guardando
-        )
-
-        // Fila: Edad y Género
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Campo Edad
-            OutlinedTextField(
-                value = edad,
-                onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) edad = it },
-                label = { Text("Edad") },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                shape = RoundedCornerShape(10.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !guardando
-            )
-
-            // Dropdown Género
-            ExposedDropdownMenuBox(
-                expanded = generoExpandido,
-                onExpandedChange = { generoExpandido = it && !guardando },
-                modifier = Modifier.weight(1f)
-            ) {
-                OutlinedTextField(
-                    value = genero,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Género") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = generoExpandido) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    enabled = !guardando
-                )
-                ExposedDropdownMenu(
-                    expanded = generoExpandido,
-                    onDismissRequest = { generoExpandido = false }
-                ) {
-                    opcionesGenero.forEach { opcion ->
-                        DropdownMenuItem(
-                            text = { Text(opcion) },
-                            onClick = {
-                                genero = opcion
-                                generoExpandido = false
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Tipo de sangre
-        Text(
-            "Tipo de sangre",
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 18.sp,
-            color = cs.onSurface
-        )
-
-        ExposedDropdownMenuBox(
-            expanded = tipoSangreExpandido,
-            onExpandedChange = { tipoSangreExpandido = it && !guardando }
-        ) {
-            OutlinedTextField(
-                value = tipoSangre,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Seleccionar tipo") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoSangreExpandido) },
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (uiState.isLoading) {
+            // Pantalla de carga
+            Box(
                 modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                enabled = !guardando
-            )
-            ExposedDropdownMenu(
-                expanded = tipoSangreExpandido,
-                onDismissRequest = { tipoSangreExpandido = false }
+                    .fillMaxSize()
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
             ) {
-                opcionesTipoSangre.forEach { opcion ->
-                    DropdownMenuItem(
-                        text = { Text(opcion) },
-                        onClick = {
-                            tipoSangre = opcion
-                            tipoSangreExpandido = false
-                        }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(64.dp),
+                        color = cs.primary,
+                        strokeWidth = 6.dp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Cargando...",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
                     )
                 }
             }
-        }
-
-        // Alergias
-        Text(
-            "Alergias",
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 18.sp,
-            color = cs.onSurface
-        )
-
-        OutlinedTextField(
-            value = alergias,
-            onValueChange = { alergias = it },
-            placeholder = { Text("Ej: Penicilina, polen, mariscos") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 80.dp),
-            shape = RoundedCornerShape(10.dp),
-            maxLines = 3,
-            enabled = !guardando
-        )
-
-        // Contacto de emergencia
-        Text(
-            "Contacto de emergencia",
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 18.sp,
-            color = cs.onSurface
-        )
-
-        // Nombre del contacto
-        OutlinedTextField(
-            value = contactoEmergenciaNombre,
-            onValueChange = { contactoEmergenciaNombre = it },
-            label = { Text("Nombre del contacto") },
-            placeholder = { Text("Ej: Juan Pérez") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = RoundedCornerShape(10.dp),
-            enabled = !guardando
-        )
-
-        // Número del contacto con botón para seleccionar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = contactoEmergenciaNumero,
-                onValueChange = {
-                    // Solo permitir números y el símbolo +
-                    if (it.all { char -> char.isDigit() || char == '+' }) {
-                        contactoEmergenciaNumero = it
-                    }
-                },
-                label = { Text("Número de teléfono") },
-                placeholder = { Text("Ej: +50212345678") },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                shape = RoundedCornerShape(10.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                enabled = !guardando
-            )
-
-            IconButton(
-                onClick = {
-                    contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                    val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
-                    pickContactLauncher.launch(intent)
-                },
+        } else {
+            // Contenido principal
+            Column(
                 modifier = Modifier
-                    .size(56.dp)
-                    .padding(top = 8.dp),
-                enabled = !guardando
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Contacts,
-                    contentDescription = "Seleccionar contacto",
-                    tint = if (guardando) cs.onSurface.copy(alpha = 0.38f) else cs.primary
+                Spacer(Modifier.height(10.dp))
+
+                // Título
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(cs.secondaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Registro Médico",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        color = cs.onSurface
+                    )
+                }
+
+                // Mensaje de bienvenida si es primera vez
+                if (!sessionManager.hasMedicalProfile()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = cs.primaryContainer
+                        )
+                    ) {
+                        Text(
+                            text = "¡Bienvenido/a! Por favor completa tu perfil médico.",
+                            modifier = Modifier.padding(16.dp),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                // Campo Nombre
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre completo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    enabled = !guardando
                 )
-            }
-        }
 
-        // Botón para regresar al menú principal (solo si el perfil ya está completado)
-        if (sessionManager.hasMedicalProfile()) {
-            Spacer(Modifier.height(8.dp))
+                // Fila: Edad y Género
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Campo Edad
+                    OutlinedTextField(
+                        value = edad,
+                        onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) edad = it },
+                        label = { Text("Edad") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = !guardando
+                    )
 
-            OutlinedButton(
-                onClick = { onPerfilCompletado() },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = cs.primary
-                ),
-                enabled = !guardando
-            ) {
+                    // Dropdown Género
+                    ExposedDropdownMenuBox(
+                        expanded = generoExpandido,
+                        onExpandedChange = { generoExpandido = it && !guardando },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = genero,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Género") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = generoExpandido) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            enabled = !guardando
+                        )
+                        ExposedDropdownMenu(
+                            expanded = generoExpandido,
+                            onDismissRequest = { generoExpandido = false }
+                        ) {
+                            opcionesGenero.forEach { opcion ->
+                                DropdownMenuItem(
+                                    text = { Text(opcion) },
+                                    onClick = {
+                                        genero = opcion
+                                        generoExpandido = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Tipo de sangre
                 Text(
-                    "Regresar al menú principal",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
+                    "Tipo de sangre",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = cs.onSurface
                 )
-            }
-        }
 
-        Spacer(Modifier.weight(1f))
-
-        // Botón Guardar
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Button(
-                onClick = {
-                    // Validar que los campos obligatorios estén llenos
-                    when {
-                        nombre.isBlank() -> {
-                            Toast.makeText(
-                                context,
-                                "Por favor ingresa tu nombre",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        contactoEmergenciaNombre.isBlank() -> {
-                            Toast.makeText(
-                                context,
-                                "Por favor ingresa el nombre del contacto de emergencia",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        contactoEmergenciaNumero.isBlank() -> {
-                            Toast.makeText(
-                                context,
-                                "Por favor ingresa el número del contacto de emergencia",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        else -> {
-                            guardando = true
-
-                            // Guardar en AppDataManager
-                            val nuevoUsuario = UsuarioRegistro(
-                                nombre = nombre,
-                                edad = edad,
-                                genero = genero,
-                                tipoSangre = tipoSangre,
-                                alergias = alergias,
-                                contactoEmergenciaNombre = contactoEmergenciaNombre,
-                                contactoEmergenciaNumero = contactoEmergenciaNumero
+                ExposedDropdownMenuBox(
+                    expanded = tipoSangreExpandido,
+                    onExpandedChange = { tipoSangreExpandido = it && !guardando }
+                ) {
+                    OutlinedTextField(
+                        value = tipoSangre,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Seleccionar tipo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoSangreExpandido) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        enabled = !guardando
+                    )
+                    ExposedDropdownMenu(
+                        expanded = tipoSangreExpandido,
+                        onDismissRequest = { tipoSangreExpandido = false }
+                    ) {
+                        opcionesTipoSangre.forEach { opcion ->
+                            DropdownMenuItem(
+                                text = { Text(opcion) },
+                                onClick = {
+                                    tipoSangre = opcion
+                                    tipoSangreExpandido = false
+                                }
                             )
-                            AppDataManager.actualizarUsuario(nuevoUsuario)
+                        }
+                    }
+                }
 
-                            // Guardar en la base de datos
-                            scope.launch {
-                                try {
-                                    val perfilMedico = PerfilMedico(
-                                        emailUsuario = userEmail,
+                // Alergias
+                Text(
+                    "Alergias",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = cs.onSurface
+                )
+
+                OutlinedTextField(
+                    value = alergias,
+                    onValueChange = { alergias = it },
+                    placeholder = { Text("Ej: Penicilina, polen, mariscos") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 80.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    maxLines = 3,
+                    enabled = !guardando
+                )
+
+                // Contacto de emergencia
+                Text(
+                    "Contacto de emergencia",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = cs.onSurface
+                )
+
+                // Nombre del contacto
+                OutlinedTextField(
+                    value = contactoEmergenciaNombre,
+                    onValueChange = { contactoEmergenciaNombre = it },
+                    label = { Text("Nombre del contacto") },
+                    placeholder = { Text("Ej: Juan Pérez") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    enabled = !guardando
+                )
+
+                // Número del contacto con botón para seleccionar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = contactoEmergenciaNumero,
+                        onValueChange = {
+                            // Solo permitir números y el símbolo +
+                            if (it.all { char -> char.isDigit() || char == '+' }) {
+                                contactoEmergenciaNumero = it
+                            }
+                        },
+                        label = { Text("Número de teléfono") },
+                        placeholder = { Text("Ej: +50212345678") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        enabled = !guardando
+                    )
+
+                    IconButton(
+                        onClick = {
+                            contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                            val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+                            pickContactLauncher.launch(intent)
+                        },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .padding(top = 8.dp),
+                        enabled = !guardando
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Contacts,
+                            contentDescription = "Seleccionar contacto",
+                            tint = if (guardando) cs.onSurface.copy(alpha = 0.38f) else cs.primary
+                        )
+                    }
+                }
+
+                // Botón para regresar al menú principal (solo si el perfil ya está completado)
+                if (sessionManager.hasMedicalProfile()) {
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = { onPerfilCompletado() },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = cs.primary
+                        ),
+                        enabled = !guardando
+                    ) {
+                        Text(
+                            "Regresar al menú principal",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                // Botón Guardar
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Button(
+                        onClick = {
+                            // Validar que los campos obligatorios estén llenos
+                            when {
+                                nombre.isBlank() -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Por favor ingresa tu nombre",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                contactoEmergenciaNombre.isBlank() -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Por favor ingresa el nombre del contacto de emergencia",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                contactoEmergenciaNumero.isBlank() -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Por favor ingresa el número del contacto de emergencia",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                else -> {
+                                    guardando = true
+
+                                    // Guardar en AppDataManager
+                                    val nuevoUsuario = UsuarioRegistro(
                                         nombre = nombre,
                                         edad = edad,
                                         genero = genero,
@@ -488,62 +506,79 @@ fun PantallaRegistro(
                                         contactoEmergenciaNombre = contactoEmergenciaNombre,
                                         contactoEmergenciaNumero = contactoEmergenciaNumero
                                     )
+                                    AppDataManager.actualizarUsuario(nuevoUsuario)
 
-                                    perfilDao.insertarPerfil(perfilMedico)
-                                    sessionManager.markProfileCompleted()
+                                    // Guardar en la base de datos
+                                    scope.launch {
+                                        try {
+                                            val perfilMedico = PerfilMedico(
+                                                emailUsuario = userEmail,
+                                                nombre = nombre,
+                                                edad = edad,
+                                                genero = genero,
+                                                tipoSangre = tipoSangre,
+                                                alergias = alergias,
+                                                contactoEmergenciaNombre = contactoEmergenciaNombre,
+                                                contactoEmergenciaNumero = contactoEmergenciaNumero
+                                            )
 
-                                    val mensaje = if (!sessionManager.hasMedicalProfile()) {
-                                        "✓ Perfil completado. ¡Bienvenido/a!"
-                                    } else {
-                                        "✓ Perfil actualizado correctamente"
+                                            perfilDao.insertarPerfil(perfilMedico)
+                                            sessionManager.markProfileCompleted()
+
+                                            val mensaje = if (!sessionManager.hasMedicalProfile()) {
+                                                "✓ Perfil completado. ¡Bienvenido/a!"
+                                            } else {
+                                                "✓ Perfil actualizado correctamente"
+                                            }
+
+                                            Toast.makeText(
+                                                context,
+                                                mensaje,
+                                                Toast.LENGTH_LONG
+                                            ).show()
+
+                                            // Siempre navegar a Inicio después de guardar
+                                            onPerfilCompletado()
+                                        } catch (e: Exception) {
+                                            Toast.makeText(
+                                                context,
+                                                "Error al guardar: ${e.message}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            guardando = false
+                                        }
                                     }
-
-                                    Toast.makeText(
-                                        context,
-                                        mensaje,
-                                        Toast.LENGTH_LONG
-                                    ).show()
-
-                                    // Siempre navegar a Inicio después de guardar
-                                    onPerfilCompletado()
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        context,
-                                        "Error al guardar: ${e.message}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    guardando = false
                                 }
                             }
+                        },
+                        shape = RoundedCornerShape(40.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = cs.secondaryContainer,
+                            contentColor = cs.onSecondaryContainer
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(64.dp),
+                        enabled = !guardando
+                    ) {
+                        if (guardando) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = cs.onSecondaryContainer
+                            )
+                        } else {
+                            Text(
+                                if (!sessionManager.hasMedicalProfile()) "Continuar" else "Guardar",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
-                },
-                shape = RoundedCornerShape(40.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = cs.secondaryContainer,
-                    contentColor = cs.onSecondaryContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(64.dp),
-                enabled = !guardando
-            ) {
-                if (guardando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = cs.onSecondaryContainer
-                    )
-                } else {
-                    Text(
-                        if (!sessionManager.hasMedicalProfile()) "Continuar" else "Guardar",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
                 }
+
+                Spacer(Modifier.height(16.dp))
             }
         }
-
-        Spacer(Modifier.height(16.dp))
     }
 }
