@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto_1.ui.componentes.BarraInferior
@@ -28,11 +30,13 @@ fun PantallaInicio(
     onIrLlamadas: () -> Unit,
     onIrCalendario: () -> Unit,
     onIrRegistro: () -> Unit,
-    navController: NavController
+    navController: NavController,
+    viewModel: InicioViewModel = viewModel()
 ) {
     val colores = MaterialTheme.colorScheme
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -42,72 +46,100 @@ fun PantallaInicio(
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colores.background)
                 .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.Start
         ) {
+            if (uiState.isLoading) {
+                // Pantalla de carga
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colores.background),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            color = colores.primary,
+                            strokeWidth = 6.dp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Cargando...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colores.onBackground
+                        )
+                    }
+                }
+            } else {
+                // Contenido principal
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colores.background)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("HusL", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("HusL", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = "Perfil"
-                )
-            }
+                    }
 
-            Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(12.dp))
 
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TarjetaInicio(
+                            titulo = "Primero Auxilios",
+                            imagen = R.drawable.fondo_primerosaux,
+                            onClick = onIrPrimerosAuxilios,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TarjetaInicio(
+                            titulo = "Mapa de contactos",
+                            imagen = R.drawable.mapa_contactos,
+                            onClick = onIrMapa,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TarjetaInicio(
-                    titulo = "Primero Auxilios",
-                    imagen = R.drawable.fondo_primerosaux,
-                    onClick = onIrPrimerosAuxilios,
-                    modifier = Modifier.weight(1f)
-                )
-                TarjetaInicio(
-                    titulo = "Mapa de contactos",
-                    imagen = R.drawable.mapa_contactos,
-                    onClick = onIrMapa,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                    Spacer(Modifier.height(12.dp))
 
-            Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TarjetaInicio(
+                            titulo = "Notificaciones",
+                            imagen = R.drawable.notificaciones,
+                            onClick = onIrCalendario,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Spacer(Modifier.height(16.dp))
 
-                TarjetaInicio(
-                    titulo = "Notificaciones",
-                    imagen = R.drawable.notificaciones,
-                    onClick = onIrCalendario,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.weight(1f))
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Button(
-                onClick = onIrLlamadas,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colores.secondaryContainer,
-                    contentColor = colores.onSecondaryContainer
-                ),
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-            ) {
-                Text(text = "🚑 Emergencia", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Button(
+                        onClick = onIrLlamadas,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colores.secondaryContainer,
+                            contentColor = colores.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text(text = "🚑 Emergencia", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
     }

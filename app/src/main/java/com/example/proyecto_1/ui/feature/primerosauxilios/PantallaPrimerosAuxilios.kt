@@ -1,5 +1,6 @@
 package com.example.proyecto_1.ui.feature.primerosauxilios
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,14 +10,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto_1.ui.componentes.BarraInferior
@@ -32,10 +33,12 @@ fun PantallaPrimerosAuxilios(
     navController: NavController,
     onVolver: () -> Unit,
     onAbrirGuia: (String) -> Unit,
-    mostrarBarraInferior: Boolean = true
+    mostrarBarraInferior: Boolean = false,
+    viewModel: PrimerosAuxiliosViewModel = viewModel()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedRoute = backStackEntry?.destination?.route
+    val uiState by viewModel.uiState.collectAsState()
 
     // Lista completa de guías con sus archivos PDF correspondientes
     val guias = listOf(
@@ -91,23 +94,57 @@ fun PantallaPrimerosAuxilios(
             }
         }
     ) { padding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(padding)
         ) {
-            items(guias) { guia ->
-                BotonGuia(
-                    texto = guia.titulo,
-                    onClick = { onAbrirGuia(guia.archivoPdf) }
-                )
-            }
+            if (uiState.isLoading) {
+                // Pantalla de carga
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 6.dp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Cargando...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black
+                        )
+                    }
+                }
+            } else {
+                // Contenido principal - Lista de guías
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(guias) { guia ->
+                        BotonGuia(
+                            texto = guia.titulo,
+                            onClick = { onAbrirGuia(guia.archivoPdf) }
+                        )
+                    }
 
-            // Espaciado al final
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+                    // Espaciado al final
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
             }
         }
     }

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyecto_1.data.AppDataManager
 import com.example.proyecto_1.data.ContactoEmergencia
 import com.google.android.gms.location.LocationServices
@@ -34,9 +36,13 @@ import com.google.android.gms.maps.model.MarkerOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
+fun PantallaMapaContactos(
+    onVolver: () -> Unit = {},
+    viewModel: MapaViewModel = viewModel()
+) {
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
 
     var showAgregarDialog by remember { mutableStateOf(false) }
     var showAlertaDialog by remember { mutableStateOf(false) }
@@ -44,7 +50,6 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
     var locationPermissionGranted by remember { mutableStateOf(false) }
 
-    // Usar los contactos del gestor global
     val contactos = AppDataManager.contactos
     val usuario = AppDataManager.usuarioRegistro.value
 
@@ -56,7 +61,6 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
         if (locationPermissionGranted) {
-            // Obtener ubicación
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
             try {
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
@@ -94,7 +98,6 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
         }
     }
 
-    // Solicitar permisos al iniciar
     LaunchedEffect(Unit) {
         locationPermissionLauncher.launch(
             arrayOf(
@@ -130,147 +133,178 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Spacer(Modifier.height(8.dp))
+            if (uiState.isLoading) {
+                // Pantalla de carga
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            color = c.primary,
+                            strokeWidth = 6.dp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Cargando...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black
+                        )
+                    }
+                }
+            } else {
+                // Contenido principal (tu código existente del mapa)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Spacer(Modifier.height(8.dp))
 
-            // Mapa real con Google Maps
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-            ) {
-                if (locationPermissionGranted && currentLocation != null) {
-                    AndroidView(
-                        factory = { ctx ->
-                            MapView(ctx).apply {
-                                onCreate(null)
-                                onResume()
-                                getMapAsync { googleMap ->
-                                    currentLocation?.let { location ->
-                                        googleMap.moveCamera(
-                                            CameraUpdateFactory.newLatLngZoom(location, 15f)
-                                        )
-                                        googleMap.addMarker(
-                                            MarkerOptions()
-                                                .position(location)
-                                                .title("Tu ubicación")
-                                        )
-                                    }
-                                    googleMap.uiSettings.isZoomControlsEnabled = true
-                                    googleMap.uiSettings.isMyLocationButtonEnabled = true
-                                    try {
-                                        googleMap.isMyLocationEnabled = true
-                                    } catch (e: SecurityException) {
-                                        // Ignorar si no hay permisos
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
+                    // Mapa real con Google Maps
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(220.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator()
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Obteniendo ubicación...",
-                                color = c.onSurfaceVariant
+                        if (locationPermissionGranted && currentLocation != null) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    MapView(ctx).apply {
+                                        onCreate(null)
+                                        onResume()
+                                        getMapAsync { googleMap ->
+                                            currentLocation?.let { location ->
+                                                googleMap.moveCamera(
+                                                    CameraUpdateFactory.newLatLngZoom(location, 15f)
+                                                )
+                                                googleMap.addMarker(
+                                                    MarkerOptions()
+                                                        .position(location)
+                                                        .title("Tu ubicación")
+                                                )
+                                            }
+                                            googleMap.uiSettings.isZoomControlsEnabled = true
+                                            googleMap.uiSettings.isMyLocationButtonEnabled = true
+                                            try {
+                                                googleMap.isMyLocationEnabled = true
+                                            } catch (e: SecurityException) {
+                                                // Ignorar si no hay permisos
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator()
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Obteniendo ubicación...",
+                                        color = c.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Resto del contenido (botones y lista de contactos)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {BotonAccion(
+                        texto = "Enviar alerta",
+                        icono = Icons.Default.Warning,
+                        onClick = { showAlertaDialog = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                        BotonAccion(
+                            texto = "Agregar contacto",
+                            icono = Icons.Default.PersonAdd,
+                            onClick = { showAgregarDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Text(
+                        "Contactos de emergencia",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = c.onSurface
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
+                            item {
+                                ItemContacto(
+                                    contacto = ContactoEmergencia(
+                                        id = 0,
+                                        nombre = usuario.contactoEmergenciaNombre,
+                                        telefono = usuario.contactoEmergenciaNumero,
+                                        relacion = "Contacto principal"
+                                    ),
+                                    onClick = {
+                                        contactoSeleccionado = ContactoEmergencia(
+                                            id = 0,
+                                            nombre = usuario.contactoEmergenciaNombre,
+                                            telefono = usuario.contactoEmergenciaNumero,
+                                            relacion = "Contacto principal"
+                                        )
+                                    },
+                                    onLlamar = {
+                                        contactoSeleccionado = ContactoEmergencia(
+                                            id = 0,
+                                            nombre = usuario.contactoEmergenciaNombre,
+                                            telefono = usuario.contactoEmergenciaNumero,
+                                            relacion = "Contacto principal"
+                                        )
+                                        callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                                    }
+                                )
+                            }
+                        }
+
+                        items(contactos.toList()) { contacto ->
+                            ItemContacto(
+                                contacto = contacto,
+                                onClick = { contactoSeleccionado = contacto },
+                                onLlamar = {
+                                    contactoSeleccionado = contacto
+                                    callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                                }
                             )
                         }
                     }
                 }
             }
-
-            // Botones de acción
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BotonAccion(
-                    texto = "Enviar alerta",
-                    icono = Icons.Default.Warning,
-                    onClick = { showAlertaDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-                BotonAccion(
-                    texto = "Agregar contacto",
-                    icono = Icons.Default.PersonAdd,
-                    onClick = { showAgregarDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Lista de contactos
-            Text(
-                "Contactos de emergencia",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = c.onSurface
-            )
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Incluir el contacto de emergencia del registro
-                if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
-                    item {
-                        ItemContacto(
-                            contacto = ContactoEmergencia(
-                                id = 0,
-                                nombre = usuario.contactoEmergenciaNombre,
-                                telefono = usuario.contactoEmergenciaNumero,
-                                relacion = "Contacto principal"
-                            ),
-                            onClick = {
-                                contactoSeleccionado = ContactoEmergencia(
-                                    id = 0,
-                                    nombre = usuario.contactoEmergenciaNombre,
-                                    telefono = usuario.contactoEmergenciaNumero,
-                                    relacion = "Contacto principal"
-                                )
-                            },
-                            onLlamar = {
-                                contactoSeleccionado = ContactoEmergencia(
-                                    id = 0,
-                                    nombre = usuario.contactoEmergenciaNombre,
-                                    telefono = usuario.contactoEmergenciaNumero,
-                                    relacion = "Contacto principal"
-                                )
-                                callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
-                            }
-                        )
-                    }
-                }
-
-                items(contactos.toList()) { contacto ->
-                    ItemContacto(
-                        contacto = contacto,
-                        onClick = { contactoSeleccionado = contacto },
-                        onLlamar = {
-                            contactoSeleccionado = contacto
-                            callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
-                        }
-                    )
-                }
-            }
         }
     }
 
-    // Diálogo para agregar contacto
+    // Diálogos (mantén tu código existente para los diálogos)
     if (showAgregarDialog) {
         AgregarContactoDialog(
             onDismiss = { showAgregarDialog = false },
@@ -281,7 +315,6 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
         )
     }
 
-    // Diálogo de alerta enviada
     if (showAlertaDialog) {
         AlertDialog(
             onDismissRequest = { showAlertaDialog = false },
@@ -311,14 +344,12 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
             confirmButton = {
                 Button(
                     onClick = {
-                        // Enviar mensaje por WhatsApp a todos los contactos
                         val ubicacionTexto = if (currentLocation != null) {
                             "\nUbicación: https://maps.google.com/?q=${currentLocation!!.latitude},${currentLocation!!.longitude}"
                         } else {
                             ""
                         }
 
-                        // Lista de todos los contactos incluyendo el principal
                         val todosContactos = mutableListOf<ContactoEmergencia>()
                         if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
                             todosContactos.add(
@@ -379,7 +410,6 @@ fun PantallaMapaContactos(onVolver: () -> Unit = {}) {
         )
     }
 
-    // Diálogo de información del contacto
     if (contactoSeleccionado != null) {
         AlertDialog(
             onDismissRequest = { contactoSeleccionado = null },
