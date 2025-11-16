@@ -32,6 +32,10 @@
         android:theme="@style/Theme.Proyecto_1"
         android:usesCleartextTraffic="false">
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="TU_API_KEY_AQUI" />
+
         <!-- Pantalla principal Compose -->
         <activity
             android:name="com.example.proyecto_1.MainActivity"
