@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,30 +26,25 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto_1.ui.componentes.BarraInferior
 
-//GuiaPrimerosAuxilios - Modelo de datos para cada guía de primeros auxilios
-//Almacena el título que se muestra en la lista y el nombre del archivo PDF asociado
 data class GuiaPrimerosAuxilios(
     val titulo: String,
     val archivoPdf: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
-//PantallaPrimerosAuxilios - Pantalla de guías de primeros auxilios
-//Muestra una lista de guías y permite abrir cada PDF, con barra superior y (opcional) barra inferior
 @Composable
 fun PantallaPrimerosAuxilios(
-    navController: NavController,          // Navegador para controlar rutas de la app
-    onVolver: () -> Unit,                  // Acción para regresar a la pantalla anterior
-    onAbrirGuia: (String) -> Unit,         // Acción para abrir una guía recibiendo el nombre del PDF
-    mostrarBarraInferior: Boolean = false, // Indica si se muestra la barra de navegación inferior
+    navController: NavController,
+    onVolver: () -> Unit,
+    onAbrirGuia: (String) -> Unit,
+    mostrarBarraInferior: Boolean = false,
     viewModel: PrimerosAuxiliosViewModel = viewModel()
 ) {
+    val cs = MaterialTheme.colorScheme
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedRoute = backStackEntry?.destination?.route
     val uiState by viewModel.uiState.collectAsState()
 
-    // Lista completa de guías con sus archivos PDF correspondientes
-    //Cada elemento representa un tema de primeros auxilios y el archivo que se abrirá al seleccionarlo
     val guias = listOf(
         GuiaPrimerosAuxilios("Fracturas", "fracturas.pdf"),
         GuiaPrimerosAuxilios("Quemaduras", "quemaduras.pdf"),
@@ -71,7 +65,6 @@ fun PantallaPrimerosAuxilios(
     )
 
     Scaffold(
-        //Barra superior con título y botón de regreso
         topBar = {
             TopAppBar(
                 title = {
@@ -90,13 +83,12 @@ fun PantallaPrimerosAuxilios(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    containerColor = cs.secondaryContainer,
+                    titleContentColor = cs.onSecondaryContainer,
+                    navigationIconContentColor = cs.onSecondaryContainer
                 )
             )
         },
-        //Barra de navegación inferior opcional para mantener la navegación global de la app
         bottomBar = {
             if (mostrarBarraInferior) {
                 BarraInferior(
@@ -112,11 +104,10 @@ fun PantallaPrimerosAuxilios(
                 .padding(padding)
         ) {
             if (uiState.isLoading) {
-                // Pantalla de carga mientras el ViewModel indica que se están preparando los datos
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.White),
+                        .background(cs.background),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -125,7 +116,7 @@ fun PantallaPrimerosAuxilios(
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(64.dp),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = cs.primary,
                             strokeWidth = 6.dp
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -133,19 +124,18 @@ fun PantallaPrimerosAuxilios(
                             text = "Cargando...",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.Black
+                            color = cs.onBackground
                         )
                     }
                 }
             } else {
-                // Contenido principal - Lista de guías de primeros auxilios
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(cs.background)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    //Por cada guía se crea un botón que permite abrir el PDF correspondiente
                     items(guias) { guia ->
                         BotonGuia(
                             texto = guia.titulo,
@@ -153,7 +143,6 @@ fun PantallaPrimerosAuxilios(
                         )
                     }
 
-                    // Espaciado al final de la lista
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -163,17 +152,17 @@ fun PantallaPrimerosAuxilios(
     }
 }
 
-//BotonGuia - Componente de tarjeta para cada guía
-//Muestra el título de la guía y un ícono de flecha para indicar navegación al detalle/PDF
 @Composable
 private fun BotonGuia(texto: String, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },   //Al tocar la tarjeta se ejecuta la acción de abrir guía
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF8F8F8)
+            containerColor = cs.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -184,20 +173,18 @@ private fun BotonGuia(texto: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            //Texto con el nombre de la guía
             Text(
                 text = texto,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black,
+                color = cs.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
             )
 
-            //Ícono de flecha que refuerza la idea de navegación/avance
             Icon(
                 imageVector = Icons.Default.ArrowForward,
                 contentDescription = "Abrir guía",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = cs.primary,
                 modifier = Modifier.size(20.dp)
             )
         }

@@ -26,7 +26,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,8 +45,8 @@ import kotlinx.coroutines.launch
 //Permite guardar datos básicos, tipo de sangre, alergias y contacto de emergencia
 @Composable
 fun PantallaRegistro(
-    sessionManager: SessionManager,              // Maneja sesión e información básica del usuario
-    onPerfilCompletado: () -> Unit = {},        // Acción al completar/guardar perfil
+    sessionManager: SessionManager,
+    onPerfilCompletado: () -> Unit = {},
     viewModel: RegistroViewModel = viewModel()
 ) {
     val cs = MaterialTheme.colorScheme
@@ -55,19 +54,14 @@ fun PantallaRegistro(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // Base de datos local y DAO para el perfil médico
     val database = remember { AppDatabase.getInstance(context) }
     val perfilDao = database.perfilMedicoDao()
-
-    // Correo del usuario almacenado en la sesión
     val userEmail = sessionManager.getUserEmail()
 
-    // LaunchedEffect - Cargar perfil existente si ya hay un registro guardado en la BD
     LaunchedEffect(userEmail) {
         if (userEmail.isNotBlank()) {
             val perfilExistente = perfilDao.obtenerPerfilPorEmail(userEmail)
             if (perfilExistente != null) {
-                // Cargar datos en AppDataManager para mantener consistencia global
                 AppDataManager.actualizarUsuario(
                     UsuarioRegistro(
                         nombre = perfilExistente.nombre,
@@ -83,17 +77,13 @@ fun PantallaRegistro(
         }
     }
 
-    // Obtener los datos actuales del usuario desde AppDataManager
     val usuarioActual = AppDataManager.usuarioRegistro.value
-
-    // Si el usuario ya tiene nombre guardado, usarlo
     val nombreInicial = if (usuarioActual.nombre != "Invitado") {
         usuarioActual.nombre
     } else {
         sessionManager.getUserName()
     }
 
-    // Estados locales para los campos del formulario
     var nombre by remember { mutableStateOf(nombreInicial) }
     var edad by remember { mutableStateOf(usuarioActual.edad) }
     var genero by remember { mutableStateOf(usuarioActual.genero) }
@@ -103,7 +93,6 @@ fun PantallaRegistro(
     var contactoEmergenciaNumero by remember { mutableStateOf(usuarioActual.contactoEmergenciaNumero) }
     var guardando by remember { mutableStateOf(false) }
 
-    // Actualizar estados cuando cambie usuarioActual
     LaunchedEffect(usuarioActual) {
         if (usuarioActual.nombre != "Invitado") {
             nombre = usuarioActual.nombre
@@ -116,52 +105,36 @@ fun PantallaRegistro(
         }
     }
 
-    // Menú desplegable para género
     var generoExpandido by remember { mutableStateOf(false) }
     val opcionesGenero = listOf("Masculino", "Femenino", "Otro", "Prefiero no decir")
 
-    // Menú desplegable para tipo de sangre
     var tipoSangreExpandido by remember { mutableStateOf(false) }
     val opcionesTipoSangre = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
 
-    // Launcher para solicitar permiso de lectura de contactos
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (!isGranted) {
-            Toast.makeText(
-                context,
-                "Permiso de contactos denegado",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, "Permiso de contactos denegado", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Launcher para seleccionar un contacto desde la app de contactos
     val pickContactLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 try {
-                    val cursor = context.contentResolver.query(
-                        uri,
-                        null,
-                        null,
-                        null,
-                        null
-                    )
+                    val cursor = context.contentResolver.query(uri, null, null, null, null)
                     cursor?.use {
                         if (it.moveToFirst()) {
                             val nameIndex = it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
                             val idIndex = it.getColumnIndex(ContactsContract.Contacts._ID)
 
-                            // Obtener nombre del contacto
                             if (nameIndex >= 0) {
                                 contactoEmergenciaNombre = it.getString(nameIndex) ?: ""
                             }
 
-                            // Obtener número del contacto usando el ID
                             if (idIndex >= 0) {
                                 val contactId = it.getString(idIndex)
                                 val phoneCursor = context.contentResolver.query(
@@ -175,7 +148,6 @@ fun PantallaRegistro(
                                     if (pc.moveToFirst()) {
                                         val phoneIndex = pc.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                                         if (phoneIndex >= 0) {
-                                            // Limpiar caracteres no numéricos
                                             contactoEmergenciaNumero = pc.getString(phoneIndex)?.replace("[^0-9+]".toRegex(), "") ?: ""
                                         }
                                     }
@@ -184,11 +156,7 @@ fun PantallaRegistro(
                         }
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(
-                        context,
-                        "Error al obtener contacto: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(context, "Error al obtener contacto: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -196,11 +164,10 @@ fun PantallaRegistro(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading) {
-            // Pantalla de carga mientras el ViewModel inicializa datos
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White),
+                    .background(cs.background),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -217,22 +184,22 @@ fun PantallaRegistro(
                         text = "Cargando...",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = cs.onBackground
                     )
                 }
             }
         } else {
-            // Contenido principal del formulario de registro médico
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(cs.background)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Spacer(Modifier.height(10.dp))
 
-                // Encabezado con título de la sección
+                // Encabezado
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -245,11 +212,10 @@ fun PantallaRegistro(
                         "Registro Médico",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Black,
-                        color = cs.onSurface
+                        color = cs.onSecondaryContainer
                     )
                 }
 
-                // Mensaje de bienvenida si es la primera vez que llena el perfil médico
                 if (!sessionManager.hasMedicalProfile()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -261,7 +227,8 @@ fun PantallaRegistro(
                             text = "¡Bienvenido/a! Por favor completa tu perfil médico.",
                             modifier = Modifier.padding(16.dp),
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = cs.onPrimaryContainer
                         )
                     }
                 }
@@ -274,7 +241,14 @@ fun PantallaRegistro(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
-                    enabled = !guardando
+                    enabled = !guardando,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = cs.onSurface,
+                        unfocusedTextColor = cs.onSurface,
+                        disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                        focusedLabelColor = cs.primary,
+                        unfocusedLabelColor = cs.onSurfaceVariant
+                    )
                 )
 
                 // Fila con Edad y Género
@@ -282,7 +256,6 @@ fun PantallaRegistro(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Campo: Edad
                     OutlinedTextField(
                         value = edad,
                         onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) edad = it },
@@ -291,10 +264,16 @@ fun PantallaRegistro(
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        enabled = !guardando
+                        enabled = !guardando,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface,
+                            disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                            focusedLabelColor = cs.primary,
+                            unfocusedLabelColor = cs.onSurfaceVariant
+                        )
                     )
 
-                    // Dropdown: Género
                     ExposedDropdownMenuBox(
                         expanded = generoExpandido,
                         onExpandedChange = { generoExpandido = it && !guardando },
@@ -310,7 +289,14 @@ fun PantallaRegistro(
                                 .menuAnchor()
                                 .fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
-                            enabled = !guardando
+                            enabled = !guardando,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = cs.onSurface,
+                                unfocusedTextColor = cs.onSurface,
+                                disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                                focusedLabelColor = cs.primary,
+                                unfocusedLabelColor = cs.onSurfaceVariant
+                            )
                         )
                         ExposedDropdownMenu(
                             expanded = generoExpandido,
@@ -351,7 +337,14 @@ fun PantallaRegistro(
                             .menuAnchor()
                             .fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        enabled = !guardando
+                        enabled = !guardando,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface,
+                            disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                            focusedLabelColor = cs.primary,
+                            unfocusedLabelColor = cs.onSurfaceVariant
+                        )
                     )
                     ExposedDropdownMenu(
                         expanded = tipoSangreExpandido,
@@ -386,7 +379,16 @@ fun PantallaRegistro(
                         .heightIn(min = 80.dp),
                     shape = RoundedCornerShape(10.dp),
                     maxLines = 3,
-                    enabled = !guardando
+                    enabled = !guardando,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = cs.onSurface,
+                        unfocusedTextColor = cs.onSurface,
+                        disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                        focusedLabelColor = cs.primary,
+                        unfocusedLabelColor = cs.onSurfaceVariant,
+                        focusedPlaceholderColor = cs.onSurfaceVariant,
+                        unfocusedPlaceholderColor = cs.onSurfaceVariant
+                    )
                 )
 
                 // Sección: Contacto de emergencia
@@ -397,7 +399,6 @@ fun PantallaRegistro(
                     color = cs.onSurface
                 )
 
-                // Campo: Nombre del contacto de emergencia
                 OutlinedTextField(
                     value = contactoEmergenciaNombre,
                     onValueChange = { contactoEmergenciaNombre = it },
@@ -406,10 +407,18 @@ fun PantallaRegistro(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
-                    enabled = !guardando
+                    enabled = !guardando,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = cs.onSurface,
+                        unfocusedTextColor = cs.onSurface,
+                        disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                        focusedLabelColor = cs.primary,
+                        unfocusedLabelColor = cs.onSurfaceVariant,
+                        focusedPlaceholderColor = cs.onSurfaceVariant,
+                        unfocusedPlaceholderColor = cs.onSurfaceVariant
+                    )
                 )
 
-                // Fila: número del contacto + botón para seleccionar desde contactos
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -418,7 +427,6 @@ fun PantallaRegistro(
                     OutlinedTextField(
                         value = contactoEmergenciaNumero,
                         onValueChange = {
-                            // Solo permitir números y el símbolo +
                             if (it.all { char -> char.isDigit() || char == '+' }) {
                                 contactoEmergenciaNumero = it
                             }
@@ -429,10 +437,18 @@ fun PantallaRegistro(
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        enabled = !guardando
+                        enabled = !guardando,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface,
+                            disabledTextColor = cs.onSurface.copy(alpha = 0.38f),
+                            focusedLabelColor = cs.primary,
+                            unfocusedLabelColor = cs.onSurfaceVariant,
+                            focusedPlaceholderColor = cs.onSurfaceVariant,
+                            unfocusedPlaceholderColor = cs.onSurfaceVariant
+                        )
                     )
 
-                    // Botón para abrir selector de contactos
                     IconButton(
                         onClick = {
                             contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
@@ -452,7 +468,6 @@ fun PantallaRegistro(
                     }
                 }
 
-                // Botón para regresar al menú principal
                 if (sessionManager.hasMedicalProfile()) {
                     Spacer(Modifier.height(8.dp))
 
@@ -475,40 +490,25 @@ fun PantallaRegistro(
 
                 Spacer(Modifier.weight(1f))
 
-                // Botón principal: Guardar
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Button(
                         onClick = {
-                            // Validación básica de campos obligatorios
                             when {
                                 nombre.isBlank() -> {
-                                    Toast.makeText(
-                                        context,
-                                        "Por favor ingresa tu nombre",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Por favor ingresa tu nombre", Toast.LENGTH_SHORT).show()
                                 }
                                 contactoEmergenciaNombre.isBlank() -> {
-                                    Toast.makeText(
-                                        context,
-                                        "Por favor ingresa el nombre del contacto de emergencia",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Por favor ingresa el nombre del contacto de emergencia", Toast.LENGTH_SHORT).show()
                                 }
                                 contactoEmergenciaNumero.isBlank() -> {
-                                    Toast.makeText(
-                                        context,
-                                        "Por favor ingresa el número del contacto de emergencia",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Por favor ingresa el número del contacto de emergencia", Toast.LENGTH_SHORT).show()
                                 }
                                 else -> {
                                     guardando = true
 
-                                    // Guardar en AppDataManager (estado global en memoria)
                                     val nuevoUsuario = UsuarioRegistro(
                                         nombre = nombre,
                                         edad = edad,
@@ -520,7 +520,6 @@ fun PantallaRegistro(
                                     )
                                     AppDataManager.actualizarUsuario(nuevoUsuario)
 
-                                    // Guardar en la base de datos local
                                     scope.launch {
                                         try {
                                             val perfilMedico = PerfilMedico(
@@ -537,27 +536,16 @@ fun PantallaRegistro(
                                             perfilDao.insertarPerfil(perfilMedico)
                                             sessionManager.markProfileCompleted()
 
-                                            // Mensaje según si es primera vez o actualización
                                             val mensaje = if (!sessionManager.hasMedicalProfile()) {
                                                 "✓ Perfil completado. ¡Bienvenido/a!"
                                             } else {
                                                 "✓ Perfil actualizado correctamente"
                                             }
 
-                                            Toast.makeText(
-                                                context,
-                                                mensaje,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-
-                                            // Siempre navegar a Inicio después de guardar
+                                            Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
                                             onPerfilCompletado()
                                         } catch (e: Exception) {
-                                            Toast.makeText(
-                                                context,
-                                                "Error al guardar: ${e.message}",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Toast.makeText(context, "Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
                                             guardando = false
                                         }
                                     }
@@ -575,13 +563,11 @@ fun PantallaRegistro(
                         enabled = !guardando
                     ) {
                         if (guardando) {
-                            // Indicador mientras se guardan los datos
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = cs.onSecondaryContainer
                             )
                         } else {
-                            // Texto del botón cambia si es primera vez o actualización
                             Text(
                                 if (!sessionManager.hasMedicalProfile()) "Continuar" else "Guardar",
                                 fontSize = 20.sp,

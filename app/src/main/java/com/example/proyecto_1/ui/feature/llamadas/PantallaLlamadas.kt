@@ -33,6 +33,7 @@ fun ConfirmarLlamadaScreen(
     onVolverInicio: () -> Unit = {},          // Acción para regresar al menú principal
     viewModel: LlamadasViewModel = viewModel()
 ) {
+    val cs = MaterialTheme.colorScheme
     val context = LocalContext.current
     val usuario = AppDataManager.usuarioRegistro.value
     val uiState by viewModel.uiState.collectAsState()
@@ -78,7 +79,7 @@ fun ConfirmarLlamadaScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White),
+                    .background(cs.background),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -87,7 +88,7 @@ fun ConfirmarLlamadaScreen(
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(64.dp),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = cs.primary,
                         strokeWidth = 6.dp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -95,7 +96,7 @@ fun ConfirmarLlamadaScreen(
                         text = "Cargando...",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = cs.onBackground
                     )
                 }
             }
@@ -104,7 +105,7 @@ fun ConfirmarLlamadaScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
+                    .background(cs.background)
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -114,7 +115,7 @@ fun ConfirmarLlamadaScreen(
                     text = "¿Está seguro?",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = cs.onBackground,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .fillMaxWidth(),
@@ -128,7 +129,7 @@ fun ConfirmarLlamadaScreen(
                             .fillMaxWidth()
                             .padding(bottom = 24.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                            containerColor = cs.primaryContainer
                         )
                     ) {
                         Column(
@@ -138,19 +139,19 @@ fun ConfirmarLlamadaScreen(
                             Text(
                                 "Se llamará a:",
                                 fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = cs.onPrimaryContainer
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 usuario.contactoEmergenciaNombre,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = cs.onPrimaryContainer
                             )
                             Text(
                                 usuario.contactoEmergenciaNumero,
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = cs.onPrimaryContainer
                             )
                         }
                     }
@@ -170,7 +171,10 @@ fun ConfirmarLlamadaScreen(
                             ).show()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE9DAF9)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = cs.secondaryContainer,
+                        contentColor = cs.onSecondaryContainer
+                    ),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
@@ -179,8 +183,7 @@ fun ConfirmarLlamadaScreen(
                     Text(
                         "LLAMAR",
                         fontSize = 26.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        fontWeight = FontWeight.Medium
                     )
                 }
 
@@ -194,7 +197,7 @@ fun ConfirmarLlamadaScreen(
                         .fillMaxWidth(0.8f)
                         .height(50.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
+                        contentColor = cs.primary
                     )
                 ) {
                     Text(

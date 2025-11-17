@@ -47,6 +47,7 @@ fun PantallaCalendar(
     onVolver: () -> Unit = {},
     viewModel: CalendarioViewModel = viewModel()
 ) {
+    val cs = MaterialTheme.colorScheme
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
     val uiState by viewModel.uiState.collectAsState()
@@ -109,7 +110,12 @@ fun PantallaCalendar(
                             contentDescription = "Volver"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = cs.secondaryContainer,
+                    titleContentColor = cs.onSecondaryContainer,
+                    navigationIconContentColor = cs.onSecondaryContainer
+                )
             )
         }
     ) { paddingValues ->
@@ -124,7 +130,7 @@ fun PantallaCalendar(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.White),
+                        .background(cs.background),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -133,7 +139,7 @@ fun PantallaCalendar(
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(64.dp),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = cs.primary,
                             strokeWidth = 6.dp
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -141,7 +147,7 @@ fun PantallaCalendar(
                             text = "Cargando...",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.Black
+                            color = cs.onBackground
                         )
                     }
                 }
@@ -151,7 +157,7 @@ fun PantallaCalendar(
                 Column(
                     Modifier
                         .fillMaxSize()
-                        .background(Color.White)
+                        .background(cs.background)
                 ) {
                     LazyColumn(
                         Modifier
@@ -176,14 +182,19 @@ fun PantallaCalendar(
                                         mesSeleccionado--
                                     }
                                 }) {
-                                    Icon(Icons.Default.ArrowBack, "Mes anterior")
+                                    Icon(
+                                        Icons.Default.ArrowBack,
+                                        "Mes anterior",
+                                        tint = cs.onBackground
+                                    )
                                 }
 
                                 // Texto: Mes y año
                                 Text(
                                     "${meses[mesSeleccionado]} $anioSeleccionado",
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = cs.onBackground
                                 )
 
                                 // Botón: Mes siguiente
@@ -195,7 +206,11 @@ fun PantallaCalendar(
                                         mesSeleccionado++
                                     }
                                 }) {
-                                    Icon(Icons.Default.ArrowForward, "Mes siguiente")
+                                    Icon(
+                                        Icons.Default.ArrowForward,
+                                        "Mes siguiente",
+                                        tint = cs.onBackground
+                                    )
                                 }
                             }
                             Spacer(Modifier.height(16.dp))
@@ -224,6 +239,7 @@ fun PantallaCalendar(
                                 "Recordatorios próximos",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
+                                color = cs.onBackground,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                         }
@@ -248,7 +264,7 @@ fun PantallaCalendar(
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = Color(0xFFF5F5F5)
+                                        containerColor = cs.surfaceVariant
                                     )
                                 ) {
                                     Column(
@@ -261,13 +277,13 @@ fun PantallaCalendar(
                                             Icons.Default.EventNote,
                                             contentDescription = null,
                                             modifier = Modifier.size(48.dp),
-                                            tint = Color.Gray
+                                            tint = cs.onSurfaceVariant
                                         )
                                         Spacer(Modifier.height(8.dp))
                                         Text(
                                             "No hay recordatorios programados",
                                             fontSize = 16.sp,
-                                            color = Color.Gray
+                                            color = cs.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -296,7 +312,10 @@ fun PantallaCalendar(
                             .fillMaxWidth()
                             .padding(16.dp)
                             .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = cs.primary,
+                            contentColor = cs.onPrimary
+                        )
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -338,7 +357,7 @@ fun PantallaCalendar(
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = null,
-                    tint = Color(0xFFF44336)
+                    tint = cs.error
                 )
             },
             title = { Text("Eliminar Recordatorio") },
@@ -362,7 +381,7 @@ fun PantallaCalendar(
                         showDeleteDialog = null
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF44336)
+                        containerColor = cs.error
                     )
                 ) {
                     Text("Eliminar")
@@ -387,6 +406,7 @@ fun AgregarRecordatorioDialog(
     onDismiss: () -> Unit,
     onConfirm: (RecordatorioMedico) -> Unit
 ) {
+    val cs = MaterialTheme.colorScheme
     var nombreMedicina by remember { mutableStateOf("") }
     var dia by remember { mutableStateOf("") }
     var mes by remember { mutableStateOf("") }
@@ -415,7 +435,11 @@ fun AgregarRecordatorioDialog(
                     label = { Text("Nombre de la medicina o cita") },
                     placeholder = { Text("Ej: Paracetamol") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = cs.onSurface,
+                        unfocusedTextColor = cs.onSurface
+                    )
                 )
 
                 // Sección: Fecha
@@ -430,7 +454,11 @@ fun AgregarRecordatorioDialog(
                         label = { Text("Día") },
                         placeholder = { Text("15") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface
+                        )
                     )
                     OutlinedTextField(
                         value = mes,
@@ -438,7 +466,11 @@ fun AgregarRecordatorioDialog(
                         label = { Text("Mes") },
                         placeholder = { Text("12") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface
+                        )
                     )
                     OutlinedTextField(
                         value = anio,
@@ -446,7 +478,11 @@ fun AgregarRecordatorioDialog(
                         label = { Text("Año") },
                         placeholder = { Text("2025") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface
+                        )
                     )
                 }
 
@@ -463,7 +499,11 @@ fun AgregarRecordatorioDialog(
                         label = { Text("Hora") },
                         placeholder = { Text("9") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface
+                        )
                     )
                     Text(":", fontSize = 20.sp)
                     OutlinedTextField(
@@ -472,7 +512,11 @@ fun AgregarRecordatorioDialog(
                         label = { Text("Min") },
                         placeholder = { Text("00") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = cs.onSurface,
+                            unfocusedTextColor = cs.onSurface
+                        )
                     )
 
                     // Selector AM/PM
@@ -527,7 +571,7 @@ fun AgregarRecordatorioDialog(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2196F3)
+                    containerColor = cs.primary
                 )
             ) {
                 Text("Agregar")
@@ -552,12 +596,14 @@ fun MedicalReminderCard(
     reminder: RecordatorioMedico,
     onDelete: () -> Unit = {}
 ) {
+    val cs = MaterialTheme.colorScheme
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp)),
+            .border(1.dp, cs.outline, RoundedCornerShape(8.dp)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = cs.surface)
     ) {
         Row(
             Modifier
@@ -568,7 +614,7 @@ fun MedicalReminderCard(
             Icon(
                 Icons.Default.MedicalServices,
                 contentDescription = null,
-                tint = Color(0xFF2196F3),
+                tint = cs.primary,
                 modifier = Modifier.size(40.dp)
             )
             Spacer(Modifier.width(12.dp))
@@ -577,19 +623,19 @@ fun MedicalReminderCard(
                     reminder.titulo,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black
+                    color = cs.onSurface
                 )
                 Text(
                     "${reminder.hora} - ${reminder.dia}/${reminder.mes}/${reminder.anio}",
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = cs.onSurfaceVariant
                 )
             }
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Eliminar",
-                    tint = Color(0xFFF44336)
+                    tint = cs.error
                 )
             }
         }
@@ -612,6 +658,7 @@ fun CalendarView(
     mes: Int,
     anio: Int
 ) {
+    val cs = MaterialTheme.colorScheme
     val calendar = Calendar.getInstance().apply {
         set(Calendar.YEAR, anio)
         set(Calendar.MONTH, mes)
@@ -637,7 +684,7 @@ fun CalendarView(
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = cs.onSurfaceVariant
                 )
             }
         }
@@ -664,7 +711,7 @@ fun CalendarView(
                                 .aspectRatio(1f)
                                 .background(
                                     color = if (currentDay == selectedDay)
-                                        Color(0xFF2196F3)
+                                        cs.primary
                                     else
                                         Color.Transparent,
                                     shape = RoundedCornerShape(8.dp)
@@ -679,9 +726,9 @@ fun CalendarView(
                                     text = currentDay.toString(),
                                     fontSize = 14.sp,
                                     color = if (currentDay == selectedDay)
-                                        Color.White
+                                        cs.onPrimary
                                     else
-                                        Color.Black,
+                                        cs.onSurface,
                                     textAlign = TextAlign.Center
                                 )
                                 if (hasReminders) {
@@ -691,9 +738,9 @@ fun CalendarView(
                                             .size(6.dp)
                                             .background(
                                                 color = if (currentDay == selectedDay)
-                                                    Color.White
+                                                    cs.onPrimary
                                                 else
-                                                    Color(0xFF2196F3),
+                                                    cs.primary,
                                                 shape = RoundedCornerShape(3.dp)
                                             )
                                     )

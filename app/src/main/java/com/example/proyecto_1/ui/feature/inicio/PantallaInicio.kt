@@ -99,7 +99,12 @@ fun PantallaInicio(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("HusL", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "HusL",
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colores.onBackground
+                        )
                     }
 
                     Spacer(Modifier.height(12.dp))
@@ -147,7 +152,11 @@ fun PantallaInicio(
                             .fillMaxWidth()
                             .height(56.dp)
                     ) {
-                        Text(text = "🚑 Emergencia", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = "🚑 Emergencia",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -164,12 +173,16 @@ private fun TarjetaInicio(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colores = MaterialTheme.colorScheme
+
     Card(
         modifier = modifier
             .height(150.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F1FF)),
+        colors = CardDefaults.cardColors(
+            containerColor = colores.surfaceVariant
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -188,11 +201,12 @@ private fun TarjetaInicio(
                     .fillMaxWidth()
                     .height(100.dp)
             )
-            // Título
+            // Título con color adaptativo
             Text(
                 text = titulo,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = colores.onSurfaceVariant
             )
         }
     }
