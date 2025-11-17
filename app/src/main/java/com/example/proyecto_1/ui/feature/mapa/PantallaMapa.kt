@@ -67,6 +67,7 @@ fun PantallaMapaContactos(
     var showAgregarDialog by remember { mutableStateOf(false) }
     var showAlertaDialog by remember { mutableStateOf(false) }
     var contactoSeleccionado by remember { mutableStateOf<ContactoEmergencia?>(null) }
+    var contactoParaLlamar by remember { mutableStateOf<ContactoEmergencia?>(null) }
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
     var locationPermissionGranted by remember { mutableStateOf(false) }
     var lugaresCercanos by remember { mutableStateOf<List<LugarCercano>>(emptyList()) }
@@ -108,7 +109,7 @@ fun PantallaMapaContactos(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            contactoSeleccionado?.let { contacto ->
+            contactoParaLlamar?.let { contacto ->
                 try {
                     val intent = Intent(Intent.ACTION_CALL).apply {
                         data = Uri.parse("tel:${contacto.telefono}")
@@ -117,9 +118,11 @@ fun PantallaMapaContactos(
                 } catch (e: Exception) {
                     Toast.makeText(context, "Error al realizar la llamada", Toast.LENGTH_SHORT).show()
                 }
+                contactoParaLlamar = null
             }
         } else {
             Toast.makeText(context, "Permiso de llamada denegado", Toast.LENGTH_SHORT).show()
+            contactoParaLlamar = null
         }
     }
 
@@ -357,7 +360,7 @@ fun PantallaMapaContactos(
                                         contacto = ContactoEmergencia(0, usuario.contactoEmergenciaNombre, usuario.contactoEmergenciaNumero, "Contacto principal"),
                                         onClick = { contactoSeleccionado = ContactoEmergencia(0, usuario.contactoEmergenciaNombre, usuario.contactoEmergenciaNumero, "Contacto principal") },
                                         onLlamar = {
-                                            contactoSeleccionado = ContactoEmergencia(0, usuario.contactoEmergenciaNombre, usuario.contactoEmergenciaNumero, "Contacto principal")
+                                            contactoParaLlamar = ContactoEmergencia(0, usuario.contactoEmergenciaNombre, usuario.contactoEmergenciaNumero, "Contacto principal")
                                             callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
                                         }
                                     )
@@ -369,7 +372,7 @@ fun PantallaMapaContactos(
                                     contacto = contacto,
                                     onClick = { contactoSeleccionado = contacto },
                                     onLlamar = {
-                                        contactoSeleccionado = contacto
+                                        contactoParaLlamar = contacto
                                         callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
                                     }
                                 )
@@ -460,7 +463,13 @@ fun PantallaMapaContactos(
                 }
             },
             confirmButton = { Button(onClick = { contactoSeleccionado = null }) { Text("Cerrar") } },
-            dismissButton = { TextButton(onClick = { callPermissionLauncher.launch(Manifest.permission.CALL_PHONE) }) { Text("Llamar") } }
+            dismissButton = {
+                TextButton(onClick = {
+                    contactoParaLlamar = contactoSeleccionado
+                    contactoSeleccionado = null
+                    callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                }) { Text("Llamar") }
+            }
         )
     }
 }
