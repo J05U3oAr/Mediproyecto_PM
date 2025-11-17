@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.inicio
 
 import androidx.compose.foundation.Image
@@ -23,6 +28,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto_1.ui.componentes.BarraInferior
 import com.example.calendary.R
 
+//PantallaInicio - Pantalla principal de la aplicación
+//Es el menú principal que muestra las opciones principales:
 @Composable
 fun PantallaInicio(
     onIrPrimerosAuxilios: () -> Unit,
@@ -52,7 +59,7 @@ fun PantallaInicio(
                 .padding(padding)
         ) {
             if (uiState.isLoading) {
-                // Pantalla de carga
+                // Pantalla de carga (2 segundos)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -86,17 +93,18 @@ fun PantallaInicio(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
+                    // Encabezado con nombre de la app
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("HusL", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
-
                     }
 
                     Spacer(Modifier.height(12.dp))
 
+                    // Primera fila de tarjetas (Primeros Auxilios y Mapa)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         TarjetaInicio(
                             titulo = "Primero Auxilios",
@@ -114,6 +122,7 @@ fun PantallaInicio(
 
                     Spacer(Modifier.height(12.dp))
 
+                    // Segunda fila de tarjetas (Notificaciones)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         TarjetaInicio(
                             titulo = "Notificaciones",
@@ -126,6 +135,7 @@ fun PantallaInicio(
 
                     Spacer(Modifier.height(16.dp))
 
+                    // Botón de emergencia grande
                     Button(
                         onClick = onIrLlamadas,
                         colors = ButtonDefaults.buttonColors(
@@ -145,6 +155,8 @@ fun PantallaInicio(
     }
 }
 
+//TarjetaInicio - Componente de tarjeta con imagen
+//Se usa en el menú principal para navegar a diferentes secciones
 @Composable
 private fun TarjetaInicio(
     titulo: String,
@@ -167,6 +179,7 @@ private fun TarjetaInicio(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Imagen
             Image(
                 painter = painterResource(id = imagen),
                 contentDescription = titulo,
@@ -175,6 +188,7 @@ private fun TarjetaInicio(
                     .fillMaxWidth()
                     .height(100.dp)
             )
+            // Título
             Text(
                 text = titulo,
                 fontSize = 14.sp,

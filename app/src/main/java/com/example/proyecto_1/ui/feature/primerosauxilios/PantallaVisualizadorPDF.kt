@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.primerosauxilios
 
 import android.graphics.Bitmap
@@ -26,21 +31,27 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
+//PantallaVisualizadorPDF - Pantalla para visualizar archivos PDF de guías de primeros auxilios
+//Carga el PDF desde recursos raw, renderiza la página actual y permite navegar entre páginas
 @Composable
 fun PantallaVisualizadorPDF(
-    nombreArchivo: String,
-    onVolver: () -> Unit,
+    nombreArchivo: String,                      // Nombre del archivo PDF (incluye extensión .pdf)
+    onVolver: () -> Unit,                      // Acción para volver a la pantalla anterior
     viewModel: VisualizadorPDFViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    //Estado de la página actual, cantidad total de páginas y bitmap generado
     var paginaActual by remember { mutableStateOf(0) }
     var totalPaginas by remember { mutableStateOf(0) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pdfRenderer by remember { mutableStateOf<PdfRenderer?>(null) }
 
-    // Cargar el PDF desde los recursos raw
+    //LaunchedEffect - Carga y prepara el PDF cuando cambia el nombre de archivo
+    //1. Obtiene el ID del recurso en /res/raw
+    //2. Copia el archivo a memoria caché
+    //3. Inicializa PdfRenderer y renderiza la primera página
     LaunchedEffect(nombreArchivo) {
         try {
             val resourceId = context.resources.getIdentifier(
@@ -50,14 +61,14 @@ fun PantallaVisualizadorPDF(
             )
 
             if (resourceId != 0) {
-                // Copiar el archivo a un archivo temporal
+                // Copiar el archivo a un archivo temporal en la caché de la app
                 val inputStream = context.resources.openRawResource(resourceId)
                 val file = File(context.cacheDir, nombreArchivo)
                 file.outputStream().use { outputStream ->
                     inputStream.copyTo(outputStream)
                 }
 
-                // Abrir el PDF
+                // Abrir el PDF con PdfRenderer
                 val fileDescriptor = ParcelFileDescriptor.open(
                     file,
                     ParcelFileDescriptor.MODE_READ_ONLY
@@ -76,6 +87,7 @@ fun PantallaVisualizadorPDF(
         }
     }
 
+    //DisposableEffect - Se asegura de cerrar el PdfRenderer cuando se salga de la pantalla
     DisposableEffect(Unit) {
         onDispose {
             pdfRenderer?.close()
@@ -83,6 +95,7 @@ fun PantallaVisualizadorPDF(
     }
 
     Scaffold(
+        //Barra superior con título de la guía y el indicador de página actual
         topBar = {
             TopAppBar(
                 title = {
@@ -116,6 +129,7 @@ fun PantallaVisualizadorPDF(
                 )
             )
         },
+        //Barra inferior con controles de navegación (anterior/siguiente) entre páginas del PDF
         bottomBar = {
             if (totalPaginas > 1) {
                 NavigationBar(
@@ -128,7 +142,7 @@ fun PantallaVisualizadorPDF(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Botón Anterior
+                        // Botón Anterior - Va a la página previa si no estamos en la primera
                         IconButton(
                             onClick = {
                                 if (paginaActual > 0) {
@@ -150,12 +164,13 @@ fun PantallaVisualizadorPDF(
                             )
                         }
 
+                        //Texto que muestra página actual / total de páginas
                         Text(
                             text = "${paginaActual + 1} / $totalPaginas",
                             fontWeight = FontWeight.Medium
                         )
 
-                        // Botón Siguiente
+                        // Botón Siguiente - Avanza a la siguiente página si no estamos en la última
                         IconButton(
                             onClick = {
                                 if (paginaActual < totalPaginas - 1) {
@@ -187,7 +202,7 @@ fun PantallaVisualizadorPDF(
                 .padding(padding)
         ) {
             if (uiState.isLoading) {
-                // Pantalla de carga
+                // Pantalla de carga mientras se prepara o procesa el PDF
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -213,7 +228,7 @@ fun PantallaVisualizadorPDF(
                     }
                 }
             } else {
-                // Contenido del PDF
+                // Contenido del PDF: se muestra la página actual como imagen
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap!!.asImageBitmap(),
@@ -224,6 +239,7 @@ fun PantallaVisualizadorPDF(
                             .padding(16.dp)
                     )
                 } else {
+                    // Indicador de carga mientras todavía no se ha generado el bitmap
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -236,6 +252,8 @@ fun PantallaVisualizadorPDF(
     }
 }
 
+//renderizarPagina - Función auxiliar para renderizar una página del PDF a un Bitmap
+//Recibe el PdfRenderer, el índice de página y un callback para devolver el Bitmap generado
 private fun renderizarPagina(
     renderer: PdfRenderer?,
     paginaIndex: Int,
@@ -243,11 +261,13 @@ private fun renderizarPagina(
 ) {
     renderer?.let { pdf ->
         pdf.openPage(paginaIndex).use { pagina ->
+            //Se crea un bitmap con el tamaño de la página (escalado x2 para mejor resolución)
             val bitmap = Bitmap.createBitmap(
                 pagina.width * 2,
                 pagina.height * 2,
                 Bitmap.Config.ARGB_8888
             )
+            //Se dibuja la página del PDF sobre el bitmap
             pagina.render(
                 bitmap,
                 null,

@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.calendario
 
 import android.Manifest
@@ -30,6 +35,12 @@ import com.example.proyecto_1.data.RecordatorioMedico
 import com.example.proyecto_1.notifications.NotificationScheduler
 import java.util.*
 
+//PantallaCalendar - Pantalla de gestión de recordatorios médicos
+//PROPÓSITO:
+//Permitir al usuario crear, visualizar y eliminar recordatorios para:
+//Tomar medicamentos
+//Asistir a citas médicas
+//Cualquier evento médico importante
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaCalendar(
@@ -40,13 +51,18 @@ fun PantallaCalendar(
     val calendar = Calendar.getInstance()
     val uiState by viewModel.uiState.collectAsState()
 
+    // Estados para el calendario
     var mesSeleccionado by remember { mutableStateOf(calendar.get(Calendar.MONTH)) }
     var anioSeleccionado by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
     var selectedDay by remember { mutableStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
+
+    // Estados para los diálogos
     var showDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<RecordatorioMedico?>(null) }
 
-    // Launcher para pedir permiso de notificaciones (Android 13+)
+    //Launcher para solicitar permiso de notificaciones en Android 13+
+    //En Android 13 (API 33) y superior, las apps necesitan pedir
+    //permiso explícito para mostrar notificaciones.
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -59,15 +75,18 @@ fun PantallaCalendar(
         }
     }
 
-    // Solicitar permiso al iniciar si es necesario
+    //LaunchedEffect - Solicita permiso de notificaciones al iniciar
+    //Solo se ejecuta en Android 13+ (Tiramisu)
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
+    // Obtener recordatorios desde AppDataManager
     val recordatorios = AppDataManager.recordatorios
 
+    // Nombres de los meses en español
     val meses = listOf(
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -100,7 +119,8 @@ fun PantallaCalendar(
                 .padding(paddingValues)
         ) {
             if (uiState.isLoading) {
-                // Pantalla de carga
+                //PANTALLA DE CARGA
+                //Muestra spinner circular por 2 segundos
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -126,7 +146,8 @@ fun PantallaCalendar(
                     }
                 }
             } else {
-                // Contenido principal
+
+                //CONTENIDO PRINCIPAL
                 Column(
                     Modifier
                         .fillMaxSize()
@@ -137,16 +158,19 @@ fun PantallaCalendar(
                             .weight(1f)
                             .padding(16.dp)
                     ) {
-                        // Selector de mes y año
+                        //SELECTOR DE MES Y AÑO
+                        //Permite navegar entre meses con flechas
+                        //Muestra el mes y año actual seleccionado
                         item {
                             Row(
                                 Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                // Botón: Mes anterior
                                 IconButton(onClick = {
                                     if (mesSeleccionado == 0) {
-                                        mesSeleccionado = 11
+                                        mesSeleccionado = 11  // Diciembre
                                         anioSeleccionado--
                                     } else {
                                         mesSeleccionado--
@@ -155,15 +179,17 @@ fun PantallaCalendar(
                                     Icon(Icons.Default.ArrowBack, "Mes anterior")
                                 }
 
+                                // Texto: Mes y año
                                 Text(
                                     "${meses[mesSeleccionado]} $anioSeleccionado",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
                                 )
 
+                                // Botón: Mes siguiente
                                 IconButton(onClick = {
                                     if (mesSeleccionado == 11) {
-                                        mesSeleccionado = 0
+                                        mesSeleccionado = 0  // Enero
                                         anioSeleccionado++
                                     } else {
                                         mesSeleccionado++
@@ -175,7 +201,12 @@ fun PantallaCalendar(
                             Spacer(Modifier.height(16.dp))
                         }
 
-                        // Calendario
+                        //CALENDARIO VISUAL
+                        //Componente que muestra:
+                        //Días de la semana
+                        //Días del mes en cuadrícula
+                        //Día seleccionado resaltado
+                        //Puntos indicadores en días con recordatorios
                         item {
                             CalendarView(
                                 selectedDay = selectedDay,
@@ -187,7 +218,7 @@ fun PantallaCalendar(
                             Spacer(Modifier.height(24.dp))
                         }
 
-                        // Recordatorios próximos
+                        //SECCIÓN: RECORDATORIOS PRÓXIMOS
                         item {
                             Text(
                                 "Recordatorios próximos",
@@ -197,6 +228,10 @@ fun PantallaCalendar(
                             )
                         }
 
+                        //FILTRAR Y ORDENAR RECORDATORIOS
+                        //1. Filtra solo recordatorios futuros (no pasados)
+                        //2. Ordena por fecha (año, mes, día)
+                        //3. Toma máximo 5 para mostrar
                         val upcomingReminders = recordatorios
                             .filter {
                                 val fechaRecordatorio = Calendar.getInstance().apply {
@@ -207,6 +242,7 @@ fun PantallaCalendar(
                             .sortedWith(compareBy({ it.anio }, { it.mes }, { it.dia }))
                             .take(5)
 
+                        //MOSTRAR RECORDATORIOS O MENSAJE VACÍO
                         if (upcomingReminders.isEmpty()) {
                             item {
                                 Card(
@@ -251,6 +287,9 @@ fun PantallaCalendar(
                         }
                     }
 
+                    //BOTÓN: AGREGAR NUEVO RECORDATORIO
+                    //Botón fijo en la parte inferior
+                    //Abre el diálogo para crear un recordatorio
                     Button(
                         onClick = { showDialog = true },
                         modifier = Modifier
@@ -268,13 +307,18 @@ fun PantallaCalendar(
         }
     }
 
-    // Diálogo para agregar recordatorio
+    //DIÁLOGO: AGREGAR RECORDATORIO
+    //Muestra formulario para crear nuevo recordatorio
     if (showDialog) {
         AgregarRecordatorioDialog(
             onDismiss = { showDialog = false },
             onConfirm = { nuevoRecordatorio ->
+                // Agregar a AppDataManager
                 AppDataManager.agregarRecordatorio(nuevoRecordatorio)
+
+                // Programar notificación con WorkManager
                 NotificationScheduler.programarNotificacion(context, nuevoRecordatorio)
+
                 Toast.makeText(
                     context,
                     "Recordatorio programado correctamente",
@@ -285,7 +329,8 @@ fun PantallaCalendar(
         )
     }
 
-    // Diálogo para eliminar recordatorio
+    //DIÁLOGO: CONFIRMAR ELIMINACIÓN
+    //Pide confirmación antes de eliminar un recordatorio
     showDeleteDialog?.let { recordatorio ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
@@ -303,8 +348,12 @@ fun PantallaCalendar(
             confirmButton = {
                 Button(
                     onClick = {
+                        // Eliminar de AppDataManager
                         AppDataManager.eliminarRecordatorio(recordatorio.id)
+
+                        // Cancelar notificación programada
                         NotificationScheduler.cancelarNotificacion(context, recordatorio.id)
+
                         Toast.makeText(
                             context,
                             "Recordatorio eliminado",
@@ -327,6 +376,12 @@ fun PantallaCalendar(
         )
     }
 }
+
+//AgregarRecordatorioDialog - Diálogo para crear recordatorio
+//CAMPOS:
+//Nombre de la medicina o cita
+//Fecha: día, mes, año
+//Hora: hora, minuto, AM/PM
 @Composable
 fun AgregarRecordatorioDialog(
     onDismiss: () -> Unit,
@@ -353,6 +408,7 @@ fun AgregarRecordatorioDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Campo: Nombre
                 OutlinedTextField(
                     value = nombreMedicina,
                     onValueChange = { nombreMedicina = it },
@@ -362,6 +418,7 @@ fun AgregarRecordatorioDialog(
                     singleLine = true
                 )
 
+                // Sección: Fecha
                 Text("Fecha:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -393,6 +450,7 @@ fun AgregarRecordatorioDialog(
                     )
                 }
 
+                // Sección: Hora
                 Text("Hora:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -417,6 +475,7 @@ fun AgregarRecordatorioDialog(
                         singleLine = true
                     )
 
+                    // Selector AM/PM
                     Column {
                         Row(
                             verticalAlignment = Alignment.CenterVertically
@@ -482,6 +541,12 @@ fun AgregarRecordatorioDialog(
     )
 }
 
+//MedicalReminderCard - Tarjeta de recordatorio médico
+//Muestra:
+//Icono de medicina
+//Título del recordatorio
+//Hora y fecha
+//Botón de eliminar
 @Composable
 fun MedicalReminderCard(
     reminder: RecordatorioMedico,
@@ -531,6 +596,14 @@ fun MedicalReminderCard(
     }
 }
 
+//CalendarView - Componente de calendario mensual
+//FUNCIONAMIENTO:
+//1. Calcula cuántos días tiene el mes
+//2. Determina en qué día de la semana empieza el mes
+//3. Renderiza una cuadrícula de 6 semanas x 7 días
+//4. Marca el día seleccionado con fondo azul
+//5. Muestra puntos en días que tienen recordatorios
+
 @Composable
 fun CalendarView(
     selectedDay: Int,
@@ -545,6 +618,7 @@ fun CalendarView(
         set(Calendar.DAY_OF_MONTH, 1)
     }
 
+    // Calcular días del mes y primer día de la semana
     val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
     val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1
 
@@ -568,7 +642,7 @@ fun CalendarView(
             }
         }
 
-        // Días del mes
+        // Días del mes (6 semanas)
         for (week in 0 until 6) {
             Row(
                 Modifier.fillMaxWidth(),

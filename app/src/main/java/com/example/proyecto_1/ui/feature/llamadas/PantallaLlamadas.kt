@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.llamadas
 
 import android.Manifest
@@ -22,9 +27,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyecto_1.data.AppDataManager
 
+//Muestra el contacto de emergencia configurado y solicita confirmación antes de llamar
 @Composable
 fun ConfirmarLlamadaScreen(
-    onVolverInicio: () -> Unit = {},
+    onVolverInicio: () -> Unit = {},          // Acción para regresar al menú principal
     viewModel: LlamadasViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -36,7 +42,7 @@ fun ConfirmarLlamadaScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Si el permiso fue otorgado, realizar la llamada
+            // Si el permiso fue otorgado, realizar la llamada al contacto de emergencia
             if (usuario.contactoEmergenciaNumero.isNotBlank()) {
                 try {
                     val intent = Intent(Intent.ACTION_CALL).apply {
@@ -68,7 +74,7 @@ fun ConfirmarLlamadaScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading) {
-            // Pantalla de carga
+            // Pantalla de carga mientras el ViewModel simula carga inicial
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -94,7 +100,7 @@ fun ConfirmarLlamadaScreen(
                 }
             }
         } else {
-            // Contenido principal
+            // Contenido principal: confirmación de llamada y botones de acción
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -103,6 +109,7 @@ fun ConfirmarLlamadaScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Título de confirmación
                 Text(
                     text = "¿Está seguro?",
                     fontSize = 22.sp,
@@ -114,7 +121,7 @@ fun ConfirmarLlamadaScreen(
                     textAlign = TextAlign.Center
                 )
 
-                // Mostrar información del contacto de emergencia
+                // Card con información del contacto de emergencia, si existe
                 if (usuario.contactoEmergenciaNombre.isNotBlank()) {
                     Card(
                         modifier = Modifier
@@ -149,10 +156,11 @@ fun ConfirmarLlamadaScreen(
                     }
                 }
 
+                // Botón principal para iniciar la llamada (solicita permiso si es necesario)
                 Button(
                     onClick = {
                         if (usuario.contactoEmergenciaNumero.isNotBlank()) {
-                            // Solicitar permiso de llamada
+                            // Solicitar permiso de llamada antes de marcar
                             callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
                         } else {
                             Toast.makeText(
@@ -178,7 +186,7 @@ fun ConfirmarLlamadaScreen(
 
                 Spacer(Modifier.height(40.dp))
 
-                // Botón para regresar al menú principal
+                // Botón secundario: regresar al menú principal sin llamar
                 OutlinedButton(
                     onClick = onVolverInicio,
                     shape = RoundedCornerShape(12.dp),

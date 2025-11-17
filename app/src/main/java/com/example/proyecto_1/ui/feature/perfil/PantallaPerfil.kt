@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.perfil
 
 import androidx.compose.foundation.Image
@@ -27,6 +32,15 @@ import com.example.proyecto_1.data.database.AppDatabase
 import com.example.proyecto_1.ui.componentes.BarraInferior
 import kotlinx.coroutines.launch
 
+// Composable principal que muestra el perfil del usuario con su información médica
+// Carga datos desde Room Database y los sincroniza con AppDataManager
+// Permite cerrar sesión con confirmación
+//
+// Parámetros:
+//   - sessionManager: Gestor de sesión para obtener email y cerrar sesión
+//   - onCerrarSesion: Callback ejecutado al confirmar cierre de sesión
+//   - navController: Controlador de navegación para la barra inferior
+//   - modifier: Modificadores opcionales para personalización
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaPerfil(
@@ -38,17 +52,21 @@ fun PantallaPerfil(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Base de datos
+    // Inicializa la base de datos Room y obtiene el DAO
     val database = remember { AppDatabase.getInstance(context) }
     val perfilDao = database.perfilMedicoDao()
 
+    // Obtiene el email del usuario autenticado
     val userEmail = sessionManager.getUserEmail()
 
-    // Cargar perfil desde BD
+    // Efecto que se ejecuta al iniciar o cuando cambia el email
+    // Carga el perfil médico desde la base de datos
     LaunchedEffect(userEmail) {
         if (userEmail.isNotBlank()) {
+            // Obtiene el perfil del usuario desde Room
             val perfilExistente = perfilDao.obtenerPerfilPorEmail(userEmail)
             if (perfilExistente != null) {
+                // Actualiza AppDataManager con los datos del perfil
                 AppDataManager.actualizarUsuario(
                     UsuarioRegistro(
                         nombre = perfilExistente.nombre,
@@ -64,16 +82,17 @@ fun PantallaPerfil(
         }
     }
 
-    // Obtener los datos del usuario desde el gestor global
+    // Obtiene los datos del usuario desde el gestor global
     val usuario = AppDataManager.usuarioRegistro.value
 
-    // Estado para el diálogo de confirmación
+    // Estado para controlar el diálogo de confirmación de cierre de sesión
     var mostrarDialogoCerrarSesion by remember { mutableStateOf(false) }
 
-    // Obtener la ruta actual para la barra inferior
+    // Observa la ruta actual para la barra inferior
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route
 
+    // Scaffold proporciona la estructura básica con topBar y bottomBar
     Scaffold(
         topBar = {
             TopAppBar(
@@ -100,6 +119,7 @@ fun PantallaPerfil(
             )
         }
     ) { padding ->
+        // Columna principal con scroll vertical
         Column(
             modifier = modifier
                 .padding(padding)
@@ -109,6 +129,7 @@ fun PantallaPerfil(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Imagen de perfil circular
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "Foto de perfil",
@@ -117,7 +138,7 @@ fun PantallaPerfil(
                     .clip(CircleShape)
             )
 
-            // Mostrar correo del usuario
+            // Card que muestra el correo del usuario autenticado
             if (userEmail.isNotBlank()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -148,11 +169,12 @@ fun PantallaPerfil(
                 }
             }
 
-            // Información del usuario
+            // Columna con toda la información médica del usuario
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Título de la sección
                 Text(
                     "Información Médica",
                     fontWeight = FontWeight.Bold,
@@ -160,13 +182,13 @@ fun PantallaPerfil(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Nombre
+                // Card con nombre del usuario
                 InfoCard(
                     titulo = "Nombre",
                     valor = if (usuario.nombre.isNotBlank()) usuario.nombre else "No especificado"
                 )
 
-                // Edad
+                // Card con edad (solo si está especificada)
                 if (usuario.edad.isNotBlank()) {
                     InfoCard(
                         titulo = "Edad",
@@ -174,7 +196,7 @@ fun PantallaPerfil(
                     )
                 }
 
-                // Género
+                // Card con género (solo si está especificado)
                 if (usuario.genero.isNotBlank()) {
                     InfoCard(
                         titulo = "Género",
@@ -182,7 +204,7 @@ fun PantallaPerfil(
                     )
                 }
 
-                // Tipo de sangre
+                // Card con tipo de sangre (solo si está especificado)
                 if (usuario.tipoSangre.isNotBlank()) {
                     InfoCard(
                         titulo = "Tipo de sangre",
@@ -190,7 +212,7 @@ fun PantallaPerfil(
                     )
                 }
 
-                // Alergias
+                // Card con alergias (solo si están especificadas)
                 if (usuario.alergias.isNotBlank()) {
                     InfoCard(
                         titulo = "Alergias",
@@ -198,7 +220,7 @@ fun PantallaPerfil(
                     )
                 }
 
-                // Contacto de emergencia
+                // Sección de contacto de emergencia (si existe)
                 if (usuario.contactoEmergenciaNombre.isNotBlank() || usuario.contactoEmergenciaNumero.isNotBlank()) {
                     Text(
                         "Contacto de Emergencia",
@@ -207,6 +229,7 @@ fun PantallaPerfil(
                         color = MaterialTheme.colorScheme.primary
                     )
 
+                    // Card con nombre del contacto
                     if (usuario.contactoEmergenciaNombre.isNotBlank()) {
                         InfoCard(
                             titulo = "Nombre",
@@ -214,6 +237,7 @@ fun PantallaPerfil(
                         )
                     }
 
+                    // Card con teléfono del contacto
                     if (usuario.contactoEmergenciaNumero.isNotBlank()) {
                         InfoCard(
                             titulo = "Teléfono",
@@ -222,9 +246,10 @@ fun PantallaPerfil(
                     }
                 }
 
-                // Información del equipo de desarrollo
+                // Separador visual
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
+                // Información del equipo de desarrollo
                 Text(
                     "Equipo de desarrollo",
                     fontWeight = FontWeight.Bold,
@@ -233,7 +258,7 @@ fun PantallaPerfil(
                 )
 
                 Text(
-                    "Carnés: 241424, 241155, 241112",
+                    "Carnés: Luis Hernández (241424), Sebastian Lemus (241155), Arodi Chavez (241112)",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -241,7 +266,7 @@ fun PantallaPerfil(
 
             Spacer(Modifier.height(8.dp))
 
-            // Botón de cerrar sesión
+            // Botón de cerrar sesión en rojo
             Button(
                 onClick = { mostrarDialogoCerrarSesion = true },
                 colors = ButtonDefaults.buttonColors(
@@ -273,7 +298,9 @@ fun PantallaPerfil(
             confirmButton = {
                 Button(
                     onClick = {
+                        // Resetea todos los datos del AppDataManager
                         AppDataManager.resetearDatos()
+                        // Ejecuta el callback de cierre de sesión
                         onCerrarSesion()
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -292,6 +319,11 @@ fun PantallaPerfil(
     }
 }
 
+//Composable privado que muestra una tarjeta con un par título-valor
+//Se utiliza para mostrar cada campo de información del usuario
+//Parámetros:
+//titulo: Etiqueta del campo (ej: "Nombre", "Edad")
+//valor: Contenido del campo
 @Composable
 private fun InfoCard(titulo: String, valor: String) {
     Card(
@@ -305,6 +337,7 @@ private fun InfoCard(titulo: String, valor: String) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Título en gris y más pequeño
             Text(
                 titulo,
                 fontWeight = FontWeight.SemiBold,
@@ -312,6 +345,7 @@ private fun InfoCard(titulo: String, valor: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(4.dp))
+            // Valor en negro y más grande
             Text(
                 valor,
                 fontSize = 16.sp,

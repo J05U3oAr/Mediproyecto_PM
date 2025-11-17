@@ -1,25 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Declaración de características de hardware del dispositivo.
+        android.hardware.telephony:
+        - Indica que la app puede usar funciones de telefonía (llamadas), pero no es obligatoria (required="false"),
+          así la app también se puede instalar en tabletas sin módulo de llamada.
+    -->
     <uses-feature
         android:name="android.hardware.telephony"
         android:required="false" />
 
-    <!-- Permisos de red -->
+    <!--
+        PERMISOS DE RED
+        INTERNET:
+        - Necesario para consumir la API de Google Places / Maps (búsqueda de hospitales/farmacias),
+          cargar mapas, enviar enlaces por WhatsApp y cualquier otra comunicación HTTP/HTTPS.
+        ACCESS_NETWORK_STATE:
+        - Permite verificar el estado de la red (conectado/no conectado) antes de hacer solicitudes.
+    -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Permisos de ubicación -->
+    <!--
+        PERMISOS DE UBICACIÓN
+        ACCESS_FINE_LOCATION:
+        - Ubicación precisa (GPS). Se usa en PantallaMapaContactos para:
+          * Obtener la ubicación actual del usuario con FusedLocationProviderClient.
+          * Mostrar el marcador "Tu ubicación" en el mapa.
+          * Buscar lugares cercanos (hospitales/farmacias) usando Google Places.
+        ACCESS_COARSE_LOCATION:
+        - Ubicación aproximada (Wi-Fi/Celdas). Alternativa menos precisa si no se usa el GPS directamente.
+    -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Permisos de contactos -->
+    <!--
+        PERMISOS DE CONTACTOS
+        READ_CONTACTS:
+        - Permite leer contactos del dispositivo.
+        - Se utiliza en PantallaRegistro para:
+          * Abrir el selector de contactos.
+          * Obtener nombre y número del contacto de emergencia desde la agenda del usuario.
+    -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
-    <!-- Permisos de llamadas -->
+    <!--
+        PERMISOS DE LLAMADAS
+        CALL_PHONE:
+        - Permite realizar llamadas telefónicas directamente desde la app (Intent.ACTION_CALL).
+        - Se usa en:
+          * ConfirmarLlamadaScreen para llamar al contacto de emergencia.
+          * PantallaMapaContactos para llamar a contactos de emergencia guardados.
+        - Siempre se solicita en tiempo de ejecución con ActivityResultContracts.RequestPermission.
+    -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
-    <!-- Permisos de notificaciones -->
+    <!--
+        PERMISOS DE NOTIFICACIONES Y ALARMAS
+        POST_NOTIFICATIONS:
+        - Requerido en Android 13+ para poder mostrar notificaciones (WorkManager, recordatorios, etc.).
+        SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM:
+        - Permiten programar alarmas exactas (por ejemplo, recordatorios de calendario o notificaciones críticas),
+          típicamente utilizados junto con AlarmManager/WorkManager para notificaciones puntuales.
+    -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
@@ -32,11 +76,20 @@
         android:theme="@style/Theme.Proyecto_1"
         android:usesCleartextTraffic="false">
 
+        <!--
+            META-DATA: API KEY DE GOOGLE MAPS
+            com.google.android.geo.API_KEY:
+            - Aquí se coloca la API Key de Google Maps / Places.
+            - Es utilizada por:
+              * com.google.android.gms:play-services-maps para mostrar el mapa.
+              * Llamadas a la API de Places (nearbysearch) en PantallaMapaContactos para buscar hospitales/farmacias.
+            - Debe reemplazarse "TU_API_KEY_AQUI" por una clave válida configurada en Google Cloud Console.
+        -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="TU_API_KEY_AQUI" />
 
-        <!-- Pantalla principal Compose -->
+
         <activity
             android:name="com.example.proyecto_1.MainActivity"
             android:exported="true"
@@ -44,7 +97,9 @@
             android:theme="@style/Theme.Proyecto_1">
 
             <intent-filter>
+                <!-- Acción principal al iniciar la app -->
                 <action android:name="android.intent.action.MAIN" />
+                <!-- Categoría que indica que esta Activity se muestra en el launcher -->
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 

@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.registro
 
 import android.Manifest
@@ -37,10 +42,12 @@ import com.example.proyecto_1.data.database.PerfilMedico
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
+//PantallaRegistro
+//Permite guardar datos básicos, tipo de sangre, alergias y contacto de emergencia
 @Composable
 fun PantallaRegistro(
-    sessionManager: SessionManager,
-    onPerfilCompletado: () -> Unit = {},
+    sessionManager: SessionManager,              // Maneja sesión e información básica del usuario
+    onPerfilCompletado: () -> Unit = {},        // Acción al completar/guardar perfil
     viewModel: RegistroViewModel = viewModel()
 ) {
     val cs = MaterialTheme.colorScheme
@@ -48,18 +55,19 @@ fun PantallaRegistro(
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
 
-    // Base de datos
+    // Base de datos local y DAO para el perfil médico
     val database = remember { AppDatabase.getInstance(context) }
     val perfilDao = database.perfilMedicoDao()
 
+    // Correo del usuario almacenado en la sesión
     val userEmail = sessionManager.getUserEmail()
 
-    // Cargar perfil existente si hay
+    // LaunchedEffect - Cargar perfil existente si ya hay un registro guardado en la BD
     LaunchedEffect(userEmail) {
         if (userEmail.isNotBlank()) {
             val perfilExistente = perfilDao.obtenerPerfilPorEmail(userEmail)
             if (perfilExistente != null) {
-                // Cargar datos en AppDataManager
+                // Cargar datos en AppDataManager para mantener consistencia global
                 AppDataManager.actualizarUsuario(
                     UsuarioRegistro(
                         nombre = perfilExistente.nombre,
@@ -75,7 +83,7 @@ fun PantallaRegistro(
         }
     }
 
-    // Obtener los datos actuales del usuario
+    // Obtener los datos actuales del usuario desde AppDataManager
     val usuarioActual = AppDataManager.usuarioRegistro.value
 
     // Si el usuario ya tiene nombre guardado, usarlo
@@ -85,7 +93,7 @@ fun PantallaRegistro(
         sessionManager.getUserName()
     }
 
-    // Estados locales para los campos
+    // Estados locales para los campos del formulario
     var nombre by remember { mutableStateOf(nombreInicial) }
     var edad by remember { mutableStateOf(usuarioActual.edad) }
     var genero by remember { mutableStateOf(usuarioActual.genero) }
@@ -116,7 +124,7 @@ fun PantallaRegistro(
     var tipoSangreExpandido by remember { mutableStateOf(false) }
     val opcionesTipoSangre = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
 
-    // Launcher para solicitar permiso de contactos
+    // Launcher para solicitar permiso de lectura de contactos
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -129,7 +137,7 @@ fun PantallaRegistro(
         }
     }
 
-    // Launcher para seleccionar contacto
+    // Launcher para seleccionar un contacto desde la app de contactos
     val pickContactLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -148,10 +156,12 @@ fun PantallaRegistro(
                             val nameIndex = it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
                             val idIndex = it.getColumnIndex(ContactsContract.Contacts._ID)
 
+                            // Obtener nombre del contacto
                             if (nameIndex >= 0) {
                                 contactoEmergenciaNombre = it.getString(nameIndex) ?: ""
                             }
 
+                            // Obtener número del contacto usando el ID
                             if (idIndex >= 0) {
                                 val contactId = it.getString(idIndex)
                                 val phoneCursor = context.contentResolver.query(
@@ -165,6 +175,7 @@ fun PantallaRegistro(
                                     if (pc.moveToFirst()) {
                                         val phoneIndex = pc.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                                         if (phoneIndex >= 0) {
+                                            // Limpiar caracteres no numéricos
                                             contactoEmergenciaNumero = pc.getString(phoneIndex)?.replace("[^0-9+]".toRegex(), "") ?: ""
                                         }
                                     }
@@ -185,7 +196,7 @@ fun PantallaRegistro(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading) {
-            // Pantalla de carga
+            // Pantalla de carga mientras el ViewModel inicializa datos
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -211,7 +222,7 @@ fun PantallaRegistro(
                 }
             }
         } else {
-            // Contenido principal
+            // Contenido principal del formulario de registro médico
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -221,7 +232,7 @@ fun PantallaRegistro(
             ) {
                 Spacer(Modifier.height(10.dp))
 
-                // Título
+                // Encabezado con título de la sección
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -238,7 +249,7 @@ fun PantallaRegistro(
                     )
                 }
 
-                // Mensaje de bienvenida si es primera vez
+                // Mensaje de bienvenida si es la primera vez que llena el perfil médico
                 if (!sessionManager.hasMedicalProfile()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -255,7 +266,7 @@ fun PantallaRegistro(
                     }
                 }
 
-                // Campo Nombre
+                // Campo: Nombre completo
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
@@ -266,12 +277,12 @@ fun PantallaRegistro(
                     enabled = !guardando
                 )
 
-                // Fila: Edad y Género
+                // Fila con Edad y Género
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Campo Edad
+                    // Campo: Edad
                     OutlinedTextField(
                         value = edad,
                         onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) edad = it },
@@ -283,7 +294,7 @@ fun PantallaRegistro(
                         enabled = !guardando
                     )
 
-                    // Dropdown Género
+                    // Dropdown: Género
                     ExposedDropdownMenuBox(
                         expanded = generoExpandido,
                         onExpandedChange = { generoExpandido = it && !guardando },
@@ -318,7 +329,7 @@ fun PantallaRegistro(
                     }
                 }
 
-                // Tipo de sangre
+                // Sección: Tipo de sangre
                 Text(
                     "Tipo de sangre",
                     fontWeight = FontWeight.ExtraBold,
@@ -358,7 +369,7 @@ fun PantallaRegistro(
                     }
                 }
 
-                // Alergias
+                // Sección: Alergias
                 Text(
                     "Alergias",
                     fontWeight = FontWeight.ExtraBold,
@@ -378,7 +389,7 @@ fun PantallaRegistro(
                     enabled = !guardando
                 )
 
-                // Contacto de emergencia
+                // Sección: Contacto de emergencia
                 Text(
                     "Contacto de emergencia",
                     fontWeight = FontWeight.ExtraBold,
@@ -386,7 +397,7 @@ fun PantallaRegistro(
                     color = cs.onSurface
                 )
 
-                // Nombre del contacto
+                // Campo: Nombre del contacto de emergencia
                 OutlinedTextField(
                     value = contactoEmergenciaNombre,
                     onValueChange = { contactoEmergenciaNombre = it },
@@ -398,7 +409,7 @@ fun PantallaRegistro(
                     enabled = !guardando
                 )
 
-                // Número del contacto con botón para seleccionar
+                // Fila: número del contacto + botón para seleccionar desde contactos
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -421,6 +432,7 @@ fun PantallaRegistro(
                         enabled = !guardando
                     )
 
+                    // Botón para abrir selector de contactos
                     IconButton(
                         onClick = {
                             contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
@@ -440,7 +452,7 @@ fun PantallaRegistro(
                     }
                 }
 
-                // Botón para regresar al menú principal (solo si el perfil ya está completado)
+                // Botón para regresar al menú principal
                 if (sessionManager.hasMedicalProfile()) {
                     Spacer(Modifier.height(8.dp))
 
@@ -463,14 +475,14 @@ fun PantallaRegistro(
 
                 Spacer(Modifier.weight(1f))
 
-                // Botón Guardar
+                // Botón principal: Guardar
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Button(
                         onClick = {
-                            // Validar que los campos obligatorios estén llenos
+                            // Validación básica de campos obligatorios
                             when {
                                 nombre.isBlank() -> {
                                     Toast.makeText(
@@ -496,7 +508,7 @@ fun PantallaRegistro(
                                 else -> {
                                     guardando = true
 
-                                    // Guardar en AppDataManager
+                                    // Guardar en AppDataManager (estado global en memoria)
                                     val nuevoUsuario = UsuarioRegistro(
                                         nombre = nombre,
                                         edad = edad,
@@ -508,7 +520,7 @@ fun PantallaRegistro(
                                     )
                                     AppDataManager.actualizarUsuario(nuevoUsuario)
 
-                                    // Guardar en la base de datos
+                                    // Guardar en la base de datos local
                                     scope.launch {
                                         try {
                                             val perfilMedico = PerfilMedico(
@@ -525,6 +537,7 @@ fun PantallaRegistro(
                                             perfilDao.insertarPerfil(perfilMedico)
                                             sessionManager.markProfileCompleted()
 
+                                            // Mensaje según si es primera vez o actualización
                                             val mensaje = if (!sessionManager.hasMedicalProfile()) {
                                                 "✓ Perfil completado. ¡Bienvenido/a!"
                                             } else {
@@ -562,11 +575,13 @@ fun PantallaRegistro(
                         enabled = !guardando
                     ) {
                         if (guardando) {
+                            // Indicador mientras se guardan los datos
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = cs.onSecondaryContainer
                             )
                         } else {
+                            // Texto del botón cambia si es primera vez o actualización
                             Text(
                                 if (!sessionManager.hasMedicalProfile()) "Continuar" else "Guardar",
                                 fontSize = 20.sp,

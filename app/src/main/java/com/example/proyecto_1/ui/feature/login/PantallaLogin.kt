@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.login
 
 import android.util.Patterns
@@ -27,11 +32,18 @@ import com.example.proyecto_1.data.database.AppDatabase
 import com.example.proyecto_1.data.repository.UsuarioRepository
 import kotlinx.coroutines.launch
 
+//Pantalla de autenticación principal
+
+//Componente que maneja tanto el login como el registro de usuarios.
+//Alterna entre dos formularios según el estado.
+//@param sessionManager Gestor de sesión para guardar el estado del usuario
+//@param onLoginExitoso Callback que se ejecuta cuando el login es exitoso
 @Composable
 fun PantallaAuth(
     sessionManager: SessionManager,
     onLoginExitoso: (email: String, nombre: String) -> Unit
 ) {
+    // Estado para alternar entre login y registro
     var esLogin by remember { mutableStateOf(true) }
 
     Surface(
@@ -45,7 +57,7 @@ fun PantallaAuth(
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-            // Logo
+            // Logo de la aplicación
             Image(
                 painter = painterResource(id = R.drawable.logo_login),
                 contentDescription = "Logo de la aplicación",
@@ -54,6 +66,7 @@ fun PantallaAuth(
                     .padding(bottom = 16.dp)
             )
 
+            // Nombre de la aplicación
             Text(
                 text = "HusL",
                 fontSize = 32.sp,
@@ -62,6 +75,7 @@ fun PantallaAuth(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
+            // Subtítulo
             Text(
                 text = "Help us Lifes",
                 fontSize = 16.sp,
@@ -69,6 +83,7 @@ fun PantallaAuth(
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
+            // Mostrar formulario según el estado
             if (esLogin) {
                 FormularioLogin(
                     sessionManager = sessionManager,
@@ -86,6 +101,11 @@ fun PantallaAuth(
     }
 }
 
+//FormularioLogin Formulario de inicio de sesión
+
+//Permite a los usuarios autenticarse con:
+//Email
+//Contraseña
 @Composable
 fun FormularioLogin(
     sessionManager: SessionManager,
@@ -99,6 +119,7 @@ fun FormularioLogin(
     val database = remember { AppDatabase.getInstance(contexto) }
     val repository = remember { UsuarioRepository(database.usuarioDao()) }
 
+    // Estados del formulario
     var correo by remember { mutableStateOf("") }
     var contra by remember { mutableStateOf("") }
     var mostrarError by remember { mutableStateOf(false) }
@@ -124,6 +145,7 @@ fun FormularioLogin(
             color = Color.Gray
         )
 
+        // Campo de email
         OutlinedTextField(
             value = correo,
             onValueChange = {
@@ -139,6 +161,7 @@ fun FormularioLogin(
             enabled = !cargando
         )
 
+        // Campo de contraseña
         OutlinedTextField(
             value = contra,
             onValueChange = {
@@ -162,6 +185,7 @@ fun FormularioLogin(
             enabled = !cargando
         )
 
+        // Mensaje de error
         if (mostrarError) {
             Text(
                 text = mensajeError,
@@ -170,9 +194,10 @@ fun FormularioLogin(
             )
         }
 
+        // Botón de login
         Button(
             onClick = {
-                // Validación del correo
+                // Validación de campos
                 when {
                     correo.isBlank() || contra.isBlank() -> {
                         mostrarError = true
@@ -189,6 +214,7 @@ fun FormularioLogin(
                     else -> {
                         cargando = true
                         scope.launch {
+                            // Intentar iniciar sesión
                             val (exito, usuario) = repository.iniciarSesion(correo, contra)
 
                             if (exito && usuario != null) {
@@ -226,6 +252,7 @@ fun FormularioLogin(
             }
         }
 
+        // Botón para cambiar a registro
         TextButton(
             onClick = onToggle,
             enabled = !cargando
@@ -235,6 +262,13 @@ fun FormularioLogin(
     }
 }
 
+//FormularioRegistro - Formulario de creación de cuenta
+
+//Permite a nuevos usuarios registrarse con:
+//Nombre completo
+//Email
+//Contraseña
+//Confirmación de contraseña
 @Composable
 fun FormularioRegistro(
     sessionManager: SessionManager,
@@ -248,6 +282,7 @@ fun FormularioRegistro(
     val database = remember { AppDatabase.getInstance(contexto) }
     val repository = remember { UsuarioRepository(database.usuarioDao()) }
 
+    // Estados del formulario
     var nombre by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var contra by remember { mutableStateOf("") }
@@ -276,6 +311,7 @@ fun FormularioRegistro(
             color = Color.Gray
         )
 
+        // Campo de nombre
         OutlinedTextField(
             value = nombre,
             onValueChange = {
@@ -289,6 +325,7 @@ fun FormularioRegistro(
             enabled = !cargando
         )
 
+        // Campo de email
         OutlinedTextField(
             value = correo,
             onValueChange = {
@@ -304,6 +341,7 @@ fun FormularioRegistro(
             enabled = !cargando
         )
 
+        // Campo de contraseña
         OutlinedTextField(
             value = contra,
             onValueChange = {
@@ -327,6 +365,7 @@ fun FormularioRegistro(
             enabled = !cargando
         )
 
+        // Campo de confirmación de contraseña
         OutlinedTextField(
             value = confirmar,
             onValueChange = {
@@ -350,6 +389,7 @@ fun FormularioRegistro(
             enabled = !cargando
         )
 
+        // Mensaje de error
         if (mostrarError) {
             Text(
                 text = mensajeError,
@@ -358,6 +398,7 @@ fun FormularioRegistro(
             )
         }
 
+        // Botón de registro
         Button(
             onClick = {
                 when {
@@ -421,6 +462,7 @@ fun FormularioRegistro(
             }
         }
 
+        // Botón para cambiar a login
         TextButton(
             onClick = onToggle,
             enabled = !cargando

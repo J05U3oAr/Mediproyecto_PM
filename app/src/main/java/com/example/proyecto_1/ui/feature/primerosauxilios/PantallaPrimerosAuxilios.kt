@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.primerosauxilios
 
 import androidx.compose.foundation.background
@@ -22,18 +27,22 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto_1.ui.componentes.BarraInferior
 
+//GuiaPrimerosAuxilios - Modelo de datos para cada guía de primeros auxilios
+//Almacena el título que se muestra en la lista y el nombre del archivo PDF asociado
 data class GuiaPrimerosAuxilios(
     val titulo: String,
     val archivoPdf: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
+//PantallaPrimerosAuxilios - Pantalla de guías de primeros auxilios
+//Muestra una lista de guías y permite abrir cada PDF, con barra superior y (opcional) barra inferior
 @Composable
 fun PantallaPrimerosAuxilios(
-    navController: NavController,
-    onVolver: () -> Unit,
-    onAbrirGuia: (String) -> Unit,
-    mostrarBarraInferior: Boolean = false,
+    navController: NavController,          // Navegador para controlar rutas de la app
+    onVolver: () -> Unit,                  // Acción para regresar a la pantalla anterior
+    onAbrirGuia: (String) -> Unit,         // Acción para abrir una guía recibiendo el nombre del PDF
+    mostrarBarraInferior: Boolean = false, // Indica si se muestra la barra de navegación inferior
     viewModel: PrimerosAuxiliosViewModel = viewModel()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -41,6 +50,7 @@ fun PantallaPrimerosAuxilios(
     val uiState by viewModel.uiState.collectAsState()
 
     // Lista completa de guías con sus archivos PDF correspondientes
+    //Cada elemento representa un tema de primeros auxilios y el archivo que se abrirá al seleccionarlo
     val guias = listOf(
         GuiaPrimerosAuxilios("Fracturas", "fracturas.pdf"),
         GuiaPrimerosAuxilios("Quemaduras", "quemaduras.pdf"),
@@ -61,6 +71,7 @@ fun PantallaPrimerosAuxilios(
     )
 
     Scaffold(
+        //Barra superior con título y botón de regreso
         topBar = {
             TopAppBar(
                 title = {
@@ -85,6 +96,7 @@ fun PantallaPrimerosAuxilios(
                 )
             )
         },
+        //Barra de navegación inferior opcional para mantener la navegación global de la app
         bottomBar = {
             if (mostrarBarraInferior) {
                 BarraInferior(
@@ -100,7 +112,7 @@ fun PantallaPrimerosAuxilios(
                 .padding(padding)
         ) {
             if (uiState.isLoading) {
-                // Pantalla de carga
+                // Pantalla de carga mientras el ViewModel indica que se están preparando los datos
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -126,13 +138,14 @@ fun PantallaPrimerosAuxilios(
                     }
                 }
             } else {
-                // Contenido principal - Lista de guías
+                // Contenido principal - Lista de guías de primeros auxilios
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    //Por cada guía se crea un botón que permite abrir el PDF correspondiente
                     items(guias) { guia ->
                         BotonGuia(
                             texto = guia.titulo,
@@ -140,7 +153,7 @@ fun PantallaPrimerosAuxilios(
                         )
                     }
 
-                    // Espaciado al final
+                    // Espaciado al final de la lista
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -150,12 +163,14 @@ fun PantallaPrimerosAuxilios(
     }
 }
 
+//BotonGuia - Componente de tarjeta para cada guía
+//Muestra el título de la guía y un ícono de flecha para indicar navegación al detalle/PDF
 @Composable
 private fun BotonGuia(texto: String, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { onClick() },   //Al tocar la tarjeta se ejecuta la acción de abrir guía
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF8F8F8)
@@ -169,6 +184,7 @@ private fun BotonGuia(texto: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            //Texto con el nombre de la guía
             Text(
                 text = texto,
                 fontSize = 16.sp,
@@ -177,6 +193,7 @@ private fun BotonGuia(texto: String, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f)
             )
 
+            //Ícono de flecha que refuerza la idea de navegación/avance
             Icon(
                 imageVector = Icons.Default.ArrowForward,
                 contentDescription = "Abrir guía",

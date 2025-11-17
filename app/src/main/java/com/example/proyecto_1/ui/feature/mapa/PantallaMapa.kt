@@ -1,3 +1,8 @@
+//Programación de plataformas moviles
+//Sebastian Lemus (241155)
+//Luis Hernández (241424)
+//Arodi Chavez (241112)
+//prof. Juan Carlos Durini
 package com.example.proyecto_1.ui.feature.mapa
 
 import android.Manifest
@@ -38,24 +43,27 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
 
+//Incluye nombre, dirección, coordenadas, tipo y distancia desde la ubicación actual
 data class LugarCercano(
     val nombre: String,
     val direccion: String,
     val latLng: LatLng,
-    val tipo: String,
-    val distancia: Float = 0f
+    val tipo: String,          // "hospital" o "farmacia"
+    val distancia: Float = 0f  // Distancia en km desde la ubicación actual
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
+//Muestra la ubicación actual en el mapa, hospitales/farmacias cercanas y lista de contactos de emergencia
 @Composable
 fun PantallaMapaContactos(
-    onVolver: () -> Unit = {},
+    onVolver: () -> Unit = {},          // Acción para regresar a la pantalla anterior
     viewModel: MapaViewModel = viewModel()
 ) {
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // Estados de UI
     var showAgregarDialog by remember { mutableStateOf(false) }
     var showAlertaDialog by remember { mutableStateOf(false) }
     var contactoSeleccionado by remember { mutableStateOf<ContactoEmergencia?>(null) }
@@ -67,9 +75,11 @@ fun PantallaMapaContactos(
     var buscandoLugares by remember { mutableStateOf(false) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
 
+    // Datos globales: contactos y perfil de usuario
     val contactos = AppDataManager.contactos
     val usuario = AppDataManager.usuarioRegistro.value
 
+    // Launcher para permisos de ubicación
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -93,6 +103,7 @@ fun PantallaMapaContactos(
         }
     }
 
+    // Launcher para permiso de llamada telefónica
     val callPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -112,6 +123,7 @@ fun PantallaMapaContactos(
         }
     }
 
+    // LaunchedEffect - Solicita permisos de ubicación al entrar a la pantalla
     LaunchedEffect(Unit) {
         locationPermissionLauncher.launch(
             arrayOf(
@@ -121,6 +133,9 @@ fun PantallaMapaContactos(
         )
     }
 
+    // LaunchedEffect - Busca lugares cercanos (hospitales/farmacias) cada vez que:
+    // 1) Cambia la ubicación
+    // 2) Cambia la selección de filtros (mostrarHospitales/mostrarFarmacias)
     LaunchedEffect(currentLocation, mostrarHospitales, mostrarFarmacias) {
         currentLocation?.let { ubicacion ->
             if (mostrarHospitales || mostrarFarmacias) {
@@ -129,7 +144,6 @@ fun PantallaMapaContactos(
                     try {
                         val lugares = mutableListOf<LugarCercano>()
 
-                        // 🔑 REEMPLAZA "AIzaSyC_TU_API_KEY_REAL_AQUI" CON TU API KEY DE GOOGLE MAPS
                         val API_KEY = "AIzaSyC_TU_API_KEY_REAL_AQUI"
 
                         if (mostrarHospitales) {
@@ -166,6 +180,7 @@ fun PantallaMapaContactos(
     }
 
     Scaffold(
+        // Barra superior con título y botón de regreso
         topBar = {
             TopAppBar(
                 title = { Text("Mapa de contactos", fontSize = 20.sp, fontWeight = FontWeight.Bold) },
@@ -184,6 +199,7 @@ fun PantallaMapaContactos(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (uiState.isLoading) {
+                // Pantalla de carga mientras el ViewModel prepara datos
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.White),
                     contentAlignment = Alignment.Center
@@ -203,6 +219,7 @@ fun PantallaMapaContactos(
 
                     Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
                         if (locationPermissionGranted && currentLocation != null) {
+                            // AndroidView con MapView de Google Maps
                             AndroidView(
                                 factory = { ctx ->
                                     MapView(ctx).apply {
@@ -212,6 +229,7 @@ fun PantallaMapaContactos(
                                         getMapAsync { googleMap ->
                                             currentLocation?.let { location ->
                                                 googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 14f))
+                                                // Marcador de la ubicación del usuario
                                                 googleMap.addMarker(
                                                     MarkerOptions()
                                                         .position(location)
@@ -230,6 +248,7 @@ fun PantallaMapaContactos(
                                 update = { view ->
                                     view.getMapAsync { googleMap ->
                                         googleMap.clear()
+                                        // Refrescar marcadores cada vez que cambien lugaresCercanos o ubicación
                                         currentLocation?.let { location ->
                                             googleMap.addMarker(
                                                 MarkerOptions()
@@ -257,6 +276,7 @@ fun PantallaMapaContactos(
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
+                            // Mensaje mientras se obtiene la ubicación o sin permisos
                             Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     CircularProgressIndicator()
@@ -267,6 +287,7 @@ fun PantallaMapaContactos(
                         }
                     }
 
+                    // Filtros de hospitales/farmacias para el mapa
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = c.surfaceVariant)
@@ -294,11 +315,13 @@ fun PantallaMapaContactos(
                         }
                     }
 
+                    // Botones principales: enviar alerta y agregar contacto
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         BotonAccion("Enviar alerta", Icons.Default.Warning, { showAlertaDialog = true }, Modifier.weight(1f))
                         BotonAccion("Agregar contacto", Icons.Default.PersonAdd, { showAgregarDialog = true }, Modifier.weight(1f))
                     }
 
+                    // Si hay lugares cercanos, se muestra la lista de hospitales/farmacias
                     if (lugaresCercanos.isNotEmpty()) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -314,6 +337,7 @@ fun PantallaMapaContactos(
                         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(lugaresCercanos.take(10)) { lugar ->
                                 ItemLugarCercano(lugar) {
+                                    // Abrir Google Maps con la ubicación del lugar
                                     val uri = "geo:${lugar.latLng.latitude},${lugar.latLng.longitude}?q=${lugar.latLng.latitude},${lugar.latLng.longitude}(${lugar.nombre})"
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
                                     intent.setPackage("com.google.android.apps.maps")
@@ -322,9 +346,11 @@ fun PantallaMapaContactos(
                             }
                         }
                     } else {
+                        // Si no hay lugares, mostrar contactos de emergencia
                         Text("Contactos de emergencia", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = c.onSurface)
 
                         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Contacto principal del perfil médico
                             if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
                                 item {
                                     ItemContacto(
@@ -337,6 +363,7 @@ fun PantallaMapaContactos(
                                     )
                                 }
                             }
+                            // Lista de contactos adicionales guardados en AppDataManager
                             items(contactos.toList()) { contacto ->
                                 ItemContacto(
                                     contacto = contacto,
@@ -354,6 +381,7 @@ fun PantallaMapaContactos(
         }
     }
 
+    // Diálogo para agregar un nuevo contacto de emergencia
     if (showAgregarDialog) {
         AgregarContactoDialog(
             onDismiss = { showAgregarDialog = false },
@@ -364,6 +392,7 @@ fun PantallaMapaContactos(
         )
     }
 
+    // Diálogo de confirmación para enviar alerta de emergencia vía WhatsApp
     if (showAlertaDialog) {
         AlertDialog(
             onDismissRequest = { showAlertaDialog = false },
@@ -384,6 +413,7 @@ fun PantallaMapaContactos(
                             "\nUbicación: https://maps.google.com/?q=${currentLocation!!.latitude},${currentLocation!!.longitude}"
                         } else ""
 
+                        // Construir lista de todos los contactos (principal + adicionales)
                         val todosContactos = mutableListOf<ContactoEmergencia>()
                         if (usuario.contactoEmergenciaNombre.isNotBlank() && usuario.contactoEmergenciaNumero.isNotBlank()) {
                             todosContactos.add(ContactoEmergencia(0, usuario.contactoEmergenciaNombre, usuario.contactoEmergenciaNumero, "Principal"))
@@ -393,6 +423,7 @@ fun PantallaMapaContactos(
                         if (todosContactos.isEmpty()) {
                             Toast.makeText(context, "No hay contactos configurados", Toast.LENGTH_LONG).show()
                         } else {
+                            // abrir whatsapp y enviar mensaje
                             todosContactos.forEach { contacto ->
                                 try {
                                     val numeroLimpio = contacto.telefono.replace("[^0-9+]".toRegex(), "")
@@ -417,6 +448,7 @@ fun PantallaMapaContactos(
         )
     }
 
+    // Diálogo de detalle de contacto seleccionado (ver datos + opción de llamar)
     if (contactoSeleccionado != null) {
         AlertDialog(
             onDismissRequest = { contactoSeleccionado = null },
@@ -433,6 +465,8 @@ fun PantallaMapaContactos(
     }
 }
 
+//buscarLugaresCercanos - Consulta la API de Google Places para encontrar lugares cercanos
+//Recibe la ubicación, tipo de lugar (hospital/pharmacy), API key y radio de búsqueda en metros
 suspend fun buscarLugaresCercanos(ubicacion: LatLng, tipo: String, apiKey: String, radio: Int = 5000): List<LugarCercano> {
     return try {
         val url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" +
@@ -464,12 +498,16 @@ suspend fun buscarLugaresCercanos(ubicacion: LatLng, tipo: String, apiKey: Strin
     }
 }
 
+//calcularDistancia - Calcula la distancia entre dos puntos geográficos en km
+//Utiliza Location.distanceBetween y devuelve la distancia en kilómetros
 fun calcularDistancia(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
     val results = FloatArray(1)
     android.location.Location.distanceBetween(lat1, lon1, lat2, lon2, results)
     return results[0] / 1000f
 }
 
+//ItemLugarCercano - Tarjeta para mostrar información de un lugar cercano (hospital/farmacia)
+//Incluye nombre, dirección, distancia y botón para abrir en Google Maps
 @Composable
 fun ItemLugarCercano(lugar: LugarCercano, onAbrirMapa: () -> Unit) {
     Card(
@@ -502,6 +540,8 @@ fun ItemLugarCercano(lugar: LugarCercano, onAbrirMapa: () -> Unit) {
     }
 }
 
+//AgregarContactoDialog - Diálogo para agregar un nuevo contacto de emergencia
+//Pide nombre, teléfono y relación, y devuelve un ContactoEmergencia al confirmar
 @Composable
 fun AgregarContactoDialog(onDismiss: () -> Unit, onConfirm: (ContactoEmergencia) -> Unit) {
     var nombre by remember { mutableStateOf("") }
@@ -529,6 +569,8 @@ fun AgregarContactoDialog(onDismiss: () -> Unit, onConfirm: (ContactoEmergencia)
     )
 }
 
+//BotonAccion - Botón redondeado con icono y texto
+//Se usa para acciones principales de la pantalla (enviar alerta, agregar contacto)
 @Composable
 private fun BotonAccion(texto: String, icono: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
@@ -544,6 +586,8 @@ private fun BotonAccion(texto: String, icono: androidx.compose.ui.graphics.vecto
     }
 }
 
+//ItemContacto - Tarjeta para mostrar un contacto de emergencia
+//Muestra nombre, relación y botones para llamar o ver detalle
 @Composable
 private fun ItemContacto(contacto: ContactoEmergencia, onClick: () -> Unit, onLlamar: () -> Unit = {}) {
     Card(
